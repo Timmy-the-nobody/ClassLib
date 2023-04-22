@@ -1,0 +1,31 @@
+# vault configurations
+[meta]
+    # friendly name
+    title =                 "ClassLib"
+    # contributors
+    author =                "Timmy"
+    # version
+    version =               "1.0.0"
+
+# script configurations
+[script]
+    # whether to force the custom map package to do not load
+    force_no_map_package =  false
+    # auto destroy all entities spawned by this package when it unloads
+    auto_cleanup =          true
+    # whether to load all level entities on client - only enable it if your package needs to use level static meshes entities
+    load_level_entities =   false
+    # the game version (major.minor) at the time this package was created, for granting compatibility between breaking changes
+    compatibility_version = "1.49"
+    # packages requirements
+    packages_requirements = [
+                            
+    ]
+    # asset packs requirements
+    assets_requirements = [
+                            
+    ]
+    # compatible game modes
+    compatible_game_modes = [
+                            
+    ]
