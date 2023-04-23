@@ -5,6 +5,7 @@
 ]]--
 
 ClassLib = {}
+local tSerializedClasses = {}
 
 -- Cache some globals
 local type = type
@@ -55,16 +56,6 @@ function ClassLib.SuperAll(oInput)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns the class of an object
----@param oInput table @The object
----@return table|nil @The class
----
-function ClassLib.GetClass(oInput)
-	if not oInput then return end
-	return getmetatable(oInput).__index
-end
-
----`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if a value is an object from a class, or from a class that inherits from the passed class
 ---@param xVal any @The value to check
 ---@param oClass table @The class to check against
@@ -93,6 +84,54 @@ function ClassLib.IsA(xVal, oClass, bRecursive)
 	return false
 end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if the passed object is a valid instance
+---@param oInstance table @The instance to check
+---@return boolean @True if the instance is valid, false otherwise
+---
+function ClassLib.IsValid(oInstance)
+	if (type(oInstance) ~= "table") then
+		return false
+	end
+
+	local oClass = ClassLib.GetClass(oInstance)
+	if (type(oClass) ~= "table") then
+		return false
+	end
+
+	local tMT = getmetatable(oInstance)
+	return (not tMT.__invalid)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the class of an object
+---@param oInstance table @The object
+---@return table|nil @The class
+---
+function ClassLib.GetClass(oInstance)
+	if not oInstance then return end
+	return getmetatable(oInstance).__index
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns a class object by its name
+---@param sClassName string @The name of the class
+---@return table|nil @The class
+---
+function ClassLib.GetClassByName(sClassName)
+	return tSerializedClasses[sClassName]
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the name of a class
+---@param oClass table @The class
+---@return string|nil @The name of the class
+---
+function ClassLib.GetClassName(oClass)
+	local tMT = getmetatable(oClass)
+	return tMT.__class_name
+end
+
 -- Internal function to get an instance by its ID
 local function __getInstanceByID(tMT, iID)
 	for _, oInstance in ipairs(tMT.__instances) do
@@ -111,7 +150,7 @@ end
 ---@param oInheritFrom table @The class to inherit from
 ---@return table @The new class
 ---
-function ClassLib.Inherit(oInheritFrom)
+function ClassLib.Inherit(oInheritFrom, sClassName)
 	assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
 	local tFromMT = getmetatable(oInheritFrom)
@@ -128,7 +167,7 @@ function ClassLib.Inherit(oInheritFrom)
 		__div = tFromMT.__div,
 		__pow = tFromMT.__pow,
 		__concat = tFromMT.__concat,
-		__tostring = tFromMT.__tostring
+		__tostring = tFromMT.__tostring,
 	})
 
 	-- Add instance table to the new class
@@ -136,13 +175,21 @@ function ClassLib.Inherit(oInheritFrom)
     tClassMT.__next_id = 1
     tClassMT.__instances = {}
 
+	-- Register class name if available (used for network serialization)
+	if sClassName then
+		tClassMT.__class_name = sClassName
+		tSerializedClasses[sClassName] = oNewClass
+	end
+
 	-- Add static functions to the new class
     function oNewClass.GetAll() return tClassMT.__instances end
 	function oNewClass.GetCount() return #tClassMT.__instances end
 	function oNewClass.GetByID(iID) return __getInstanceByID(tClassMT, iID) end
 	function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
-	function oNewClass.GetParentClasses() return ClassLib.SuperAll(oNewClass) end
+	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
+	function oNewClass.Inherit(sName) return ClassLib.Inherit(oNewClass, sName) end
+	-- function oNewClass.GetClassName() return ClassLib.GetClassName(oNewClass) end
 
 	return oNewClass
 end
@@ -155,6 +202,7 @@ end
 function ClassLib.NewInstance(oClass, ...)
 	assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
+	local tClassMT = getmetatable(oClass)
 	local oInstance = setmetatable({}, {
 		__index = oClass,
 		__super = ClassLib.Super(oClass),
@@ -168,11 +216,11 @@ function ClassLib.NewInstance(oClass, ...)
 		__div = oClass.__div,
 		__pow = oClass.__pow,
 		__concat = oClass.__concat,
-		__tostring = oClass.__tostring
+		__tostring = oClass.__tostring,
+		__class_name = tClassMT.__class_name
 	})
 
 	-- Add instance to the class instance table
-	local tClassMT = getmetatable(oClass)
     oInstance.id = tClassMT.__next_id
 
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
@@ -198,24 +246,26 @@ function ClassLib.Destroy(oInstance, ...)
 
 	-- Call class destructor
 	if rawget(oClass, "Destructor") then
-		rawget(oClass, "Destructor")(oInstance, ...)
+		local bShouldDestroy = rawget(oClass, "Destructor")(oInstance, ...)
+		if (bShouldDestroy == false) then return end
 	end
 
 	-- Clears the instance from it's class instance table
 	local tClassMT = getmetatable(oClass)
-	local tNewInstances = {}
+	local tNewList = {}
 	for _, v in ipairs(tClassMT.__instances) do
         if (v ~= oInstance) then
-            tNewInstances[#tNewInstances + 1] = v
+            tNewList[#tNewList + 1] = v
         end
     end
-	tClassMT.__instances = tNewInstances
+	tClassMT.__instances = tNewList
 
 	-- Prevent access to the instance
 	local tMT = getmetatable(oInstance)
-	function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
-	function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
-	function tMT:__newindex() error("[ClassLib] Attempt to access a destroyed object") end
+	tMT.__invalid = true
+	-- function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
+	-- function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
+	function tMT:__newindex() error("[ClassLib] Attempt to set a value on a destroyed object") end
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
