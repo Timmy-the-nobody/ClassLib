@@ -1,14 +1,14 @@
 -- Here we create a new class that inherits from BaseClass
-Person = ClassLib.Inherit(BaseClass)
+Person = BaseClass.Inherit("Person") -- ClassLib.Inherit(BaseClass)
 
 -- Here we add a constructor to the class, which is called when we call `Class()` to create a new instance, with `self` being the instance
-function Person:Constructor(sName)
-    self.name = sName
+function Person:Constructor(sLabel)
+    self:SetLabel(sLabel)
 end
 
 -- Here we add a destructor to the class, which is called when we call `instance:Destroy()` to destroy an instance, with `self` being the instance
 function Person:Destructor()
-    print("Person "..self.name.." is being destroyed")
+    print("Person "..self:GetLabel().." is being destroyed")
 end
 
 -- Here we create some instances of the Person class
@@ -16,37 +16,46 @@ local ePerson = Person("John")
 local ePerson2 = Person("Jane")
 local ePerson3 = Person("Jack")
 
--- Here we clone an instance, and change it's `name` property
+-- Here we clone an instance, and change it's `label` property
 local ePerson4 = ePerson3:Clone()
-ePerson4.name = "Jill"
+ePerson4:SetLabel("Jill")
 
--- Here we print the instance ID and it's `name` property
-print("ePerson3:GetID():", ePerson3:GetID(), "ePerson3.name:", ePerson3.name)
+-- Here we print the instance ID and it's `label` property
+print("ePerson3:GetID():", ePerson3:GetID(), "ePerson3.name:", ePerson3:GetLabel())
 
 -- Here we get the class of the instance, and compare it with `Employee`, this will return true
 print("ePerson4:GetClass() == Employee:", ePerson4:GetClass() == Employee)
 
 -- Here we destroy an instance, after that we can't index it anymore, and will not be retrievable by the class static functions
-ePerson2:Destroy()
+
+Timer.SetTimeout(function()
+    print(ePerson2:IsValid())
+    print(ePerson2:GetLabel())
+    ePerson2:Destroy()
+    print(ePerson2:IsValid())
+    print(ePerson2:GetLabel())
+
+    print(NanosTable.Dump(Person))
+end, 1000)
 
 ------------------------------------------------------------------------------------------
 
 -- Here we loop through all valid instances of the Person class, be carefull with this, the key will not be the same as the instance's ID (which is stored in the `id` property)
 for _, oPerson in ipairs(Person.GetAll()) do
-    print(oPerson.name.." [class ID: "..oPerson:GetID().."]")
+    print(oPerson:GetLabel().." [class ID: "..oPerson:GetID().."]")
 end
 
 -- Here we print the amount of valid instances of the Person class, will return 3 since we destroyed one
 print(Person.GetCount())
 
--- Here we get a specific instance by it's ID and print it's `name` property, in this case it'll print "Jill"
-print(Person.GetByID(4).name)
+-- Here we get a specific instance by it's ID and print it's `label` property, in this case it'll print "Jill"
+print(Person.GetByID(4):GetLabel())
 
 -- Here we print the name of the class from which the Person class inherits
-print(Person.GetParentClass())
+print(ClassLib.GetClassName(Person.GetParentClass()))
 
 -- Here we print the amount of classes from which the Person class inherits, in this case it'll print 1 since it only inherits from BaseClass
-print("#Person.GetParentClasses()", #Person.GetParentClasses())
+print("#Person.GetAllParentClasses()", #Person.GetAllParentClasses())
 
 -- Here we print if a class inherit from another one (in this case we check if Person inherits from BaseClass), this will check from parent parents as well
 print("Person.IsChildOf(BaseClass)", Person.IsChildOf(BaseClass))
@@ -54,11 +63,11 @@ print("Person.IsChildOf(BaseClass)", Person.IsChildOf(BaseClass))
 ------------------------------------------------------------------------------------------
 
 -- Here we create a new class that inherits from Person
-Employee = ClassLib.Inherit(Person)
+Employee = Person.Inherit("Employee")
 
-function Employee:Constructor(sName)
+function Employee:Constructor(sLabel)
     -- Here we call the constructor of the super class, which is Person
-    self:Super().Constructor(self, sName)
+    self:Super().Constructor(self, sLabel)
 
     -- Here we add a new property to the Employee instance
     self.salary = 1000
@@ -68,7 +77,15 @@ end
 local eEmployee = Employee("Janett")
 
 -- Here we print the amount of classes from which the Person class inherits, in this case it'll print 2 since it inherits from Person, and Person inherits from BaseClass
-print("#Employee.GetParentClasses()", #Employee.GetParentClasses())
+Timer.SetTimeout(function()
+    print("#Employee.GetAllParentClasses()", Employee.GetAllParentClasses()[2] == BaseClass)
 
--- print(NanosTable.Dump(Person))
-print(#Person.GetAll())
+    -- print(NanosTable.Dump(Person))
+    print(#Person.GetAll())
+    print(ClassLib.GetClassName(eEmployee))
+    print("test", eEmployee:GetClassName())
+    print(NanosTable.Dump(eEmployee))
+
+    print("---------", ePerson4:GetLabel())
+    print("---------", ePerson4:GetLabel())
+end, 1000)
