@@ -3,13 +3,25 @@
 ---@class BaseClass
 ---
 BaseClass = {}
-BaseClass.id = 0
 
 setmetatable(BaseClass, {
+    __class_name = "BaseClass",
     __call = function(self, ...)
         return ClassLib.NewInstance(self, ...)
     end
 })
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Called after an instance is created
+---
+function BaseClass:Constructor()
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Called when an instance is about to be destroyed, return `false` to cancel the destruction
+---
+function BaseClass:Destructor()
+end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Destroys the instance
@@ -21,7 +33,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class from which this instance inherits
----@return table @The super class
+---@return table|nil @The super class
 ---
 function BaseClass:Super()
     return ClassLib.Super(self)
@@ -36,6 +48,22 @@ function BaseClass:SuperAll()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the ID of the instance, unique to the class
+---@return integer @Instance ID
+---
+function BaseClass:GetID()
+    return self.id
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the class table of the instance
+---@return table|nil @The class
+---
+function BaseClass:GetClass()
+    return ClassLib.GetClass(self)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Clones the instance, and return a new instance with the same values (except it's ID)
 ---@return table @The new instance
 ---
@@ -44,24 +72,24 @@ function BaseClass:Clone()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns the class table of the instance
----@return table @The class
+---Checks if the instance is valid
+---@return boolean @Whether the instance is valid
 ---
-function BaseClass:GetClass()
-    return ClassLib.GetClass(self)
+function BaseClass:IsValid()
+    return ClassLib.IsValid(self)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns the ID of the instance, unique to the class
----@return integer @Instance ID
+---Returns the class name of the instance
+---@return string|nil @The class name
 ---
-function BaseClass:GetID()
-    return self.id
+function BaseClass:GetClassName()
+    return ClassLib.GetClassName(self)
 end
 
 ------------------------------------------------------------------------------------------
 -- Static functions
--- The functions bellow are duplicated from `BaseClass:OnInherit`, to add EmmyLua support
+-- These just serves for EmmyLua annotations, the real functions are in `ClassLib.Inherit`
 ------------------------------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -91,59 +119,75 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class from which this class inherits
----@return table @The super class
+---@return table|nil @The super class
 ---
-BaseClass.GetParentClass = function() return BaseClass end
+function BaseClass.GetParentClass()
+    return BaseClass
+end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns a sequential table of all classes from which this class inherits
----@param bRecursive boolean @Whether to check recursively
 ---@return table<integer, table> @The super classes
 ---
-BaseClass.GetParentClasses = function(bRecursive) return {} end
+function BaseClass.GetAllParentClasses()
+    return {}
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Creates a new class that inherits from this class
+---@param sClassName string @The name of the new class
+---@return table @The new class
+---
+function BaseClass.Inherit(sClassName)
+    return ClassLib.Inherit(BaseClass, sClassName)
+end
+
+------------------------------------------------------------------------------------------
+-- Networking
+------------------------------------------------------------------------------------------
+
+function BaseClass:SetValue(sKey, xValue, bBroadcast)
+    self[sKey] = xValue
+
+    if Server and bBroadcast then
+
+        -- Events.CallRemote("CLib:SetKV", )
+    end
+end
 
 ------------------------------------------------------------------------------------------
 -- Base Class Methods
 ------------------------------------------------------------------------------------------
 
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Returns the class table of the instance
--- ---@return table @Class table
--- ---
--- function BaseClass:GetClassTable()
---     return BaseClass
--- end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the label of the instance
+---@return string @Instance label
+---
+function BaseClass:GetLabel()
+    return self.label or ""
+end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets the label of the instance
+---@param sLabel string @New label
+---
+function BaseClass:SetLabel(sLabel)
+    self.label = tostring(sLabel or "")
+end
 
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Returns the name of the instance
--- ---@return string @Instance name
--- ---
--- function BaseClass:GetName()
---     return self.name
--- end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the description of the instance
+---@return string @Instance description
+---
+function BaseClass:GetDescription()
+    return self.description
+end
 
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Sets the name of the instance
--- ---@param sName string @New name
--- ---
--- function BaseClass:SetName(sName)
---     self.name = tostring(sName or "")
--- end
-
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Returns the description of the instance
--- ---@return string @Instance description
--- ---
--- function BaseClass:GetDescription()
---     return self.description
--- end
-
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Sets the description of the instance
--- ---@param sDescription string @New description
--- ---
--- function BaseClass:SetDescription(sDescription)
---     self.description = tostring(sDescription or "")
--- end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets the description of the instance
+---@param sDescription string @New description
+---
+function BaseClass:SetDescription(sDescription)
+    self.description = tostring(sDescription or "")
+end
 
