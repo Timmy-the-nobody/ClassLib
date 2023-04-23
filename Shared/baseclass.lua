@@ -180,7 +180,7 @@ end
 ---@return string @Instance description
 ---
 function BaseClass:GetDescription()
-    return self.description
+    return self.description or ""
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
