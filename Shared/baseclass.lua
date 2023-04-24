@@ -3,6 +3,7 @@
 ---@class BaseClass
 ---
 BaseClass = {}
+BaseClass.id = 0
 
 setmetatable(BaseClass, {
     __class_name = "BaseClass",
@@ -157,37 +158,38 @@ end
 
 ------------------------------------------------------------------------------------------
 -- Base Class Methods
+-- TODO: Remove these
 ------------------------------------------------------------------------------------------
 
----`🔸 Client`<br>`🔹 Server`<br>
----Returns the label of the instance
----@return string @Instance label
----
-function BaseClass:GetLabel()
-    return self.label or ""
-end
+-- ---`🔸 Client`<br>`🔹 Server`<br>
+-- ---Returns the label of the instance
+-- ---@return string @Instance label
+-- ---
+-- function BaseClass:GetLabel()
+--     return self.label or ""
+-- end
 
----`🔸 Client`<br>`🔹 Server`<br>
----Sets the label of the instance
----@param sLabel string @New label
----
-function BaseClass:SetLabel(sLabel)
-    self.label = tostring(sLabel or "")
-end
+-- ---`🔸 Client`<br>`🔹 Server`<br>
+-- ---Sets the label of the instance
+-- ---@param sLabel string @New label
+-- ---
+-- function BaseClass:SetLabel(sLabel)
+--     self.label = tostring(sLabel or "")
+-- end
 
----`🔸 Client`<br>`🔹 Server`<br>
----Returns the description of the instance
----@return string @Instance description
----
-function BaseClass:GetDescription()
-    return self.description or ""
-end
+-- ---`🔸 Client`<br>`🔹 Server`<br>
+-- ---Returns the description of the instance
+-- ---@return string @Instance description
+-- ---
+-- function BaseClass:GetDescription()
+--     return self.description or ""
+-- end
 
----`🔸 Client`<br>`🔹 Server`<br>
----Sets the description of the instance
----@param sDescription string @New description
----
-function BaseClass:SetDescription(sDescription)
-    self.description = tostring(sDescription or "")
-end
+-- ---`🔸 Client`<br>`🔹 Server`<br>
+-- ---Sets the description of the instance
+-- ---@param sDescription string @New description
+-- ---
+-- function BaseClass:SetDescription(sDescription)
+--     self.description = tostring(sDescription or "")
+-- end
 

@@ -100,7 +100,7 @@ function ClassLib.IsValid(oInstance)
 	end
 
 	local tMT = getmetatable(oInstance)
-	return (not tMT.__invalid)
+	return (tMT.__is_valid ~= nil)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -217,7 +217,8 @@ function ClassLib.NewInstance(oClass, ...)
 		__pow = oClass.__pow,
 		__concat = oClass.__concat,
 		__tostring = oClass.__tostring,
-		__class_name = tClassMT.__class_name
+		__class_name = tClassMT.__class_name,
+		__is_valid = true
 	})
 
 	-- Add instance to the class instance table
@@ -262,7 +263,8 @@ function ClassLib.Destroy(oInstance, ...)
 
 	-- Prevent access to the instance
 	local tMT = getmetatable(oInstance)
-	tMT.__invalid = true
+	tMT.__is_valid = nil
+
 	-- function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
 	-- function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
 	function tMT:__newindex() error("[ClassLib] Attempt to set a value on a destroyed object") end

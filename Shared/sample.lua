@@ -1,5 +1,5 @@
 -- Here we create a new class that inherits from BaseClass
-Person = BaseClass.Inherit("Person") -- ClassLib.Inherit(BaseClass)
+Person = BaseClassEx.Inherit("Person") -- ClassLib.Inherit(BaseClass)
 
 -- Here we add a constructor to the class, which is called when we call `Class()` to create a new instance, with `self` being the instance
 function Person:Constructor(sLabel)
@@ -29,11 +29,9 @@ print("ePerson4:GetClass() == Employee:", ePerson4:GetClass() == Employee)
 -- Here we destroy an instance, after that we can't index it anymore, and will not be retrievable by the class static functions
 
 Timer.SetTimeout(function()
-    print(ePerson2:IsValid())
-    print(ePerson2:GetLabel())
+    print(ePerson2:GetLabel(), "is valid?", ePerson2:IsValid())
     ePerson2:Destroy()
-    print(ePerson2:IsValid())
-    print(ePerson2:GetLabel())
+    print(ePerson2:GetLabel(), "is valid?", ePerson2:IsValid())
 
     print(NanosTable.Dump(Person))
 end, 1000)
