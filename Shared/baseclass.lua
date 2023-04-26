@@ -3,7 +3,6 @@
 ---@class BaseClass
 ---
 BaseClass = {}
-BaseClass.id = 0
 
 setmetatable(BaseClass, {
     __class_name = "BaseClass",
@@ -49,19 +48,19 @@ function BaseClass:SuperAll()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns the ID of the instance, unique to the class
----@return integer @Instance ID
----
-function BaseClass:GetID()
-    return self.id
-end
-
----`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class table of the instance
 ---@return table|nil @The class
 ---
 function BaseClass:GetClass()
     return ClassLib.GetClass(self)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the ID of the instance, unique to the class
+---@return integer|nil @Instance ID
+---
+function BaseClass:GetID()
+    return ClassLib.GetID(self)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>

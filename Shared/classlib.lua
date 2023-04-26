@@ -109,8 +109,17 @@ end
 ---@return table|nil @The class
 ---
 function ClassLib.GetClass(oInstance)
-	if not oInstance then return end
+	if (type(oInstance) ~= "table") then return end
 	return getmetatable(oInstance).__index
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the ID of the instance, unique to the class
+---@return integer|nil @Instance ID
+---
+function ClassLib.GetID(oInstance)
+	if (type(oInstance) ~= "table") then return end
+	return oInstance.id
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -142,60 +151,73 @@ local function __getInstanceByID(tMT, iID)
 end
 
 ------------------------------------------------------------------------------------------
--- Hooks
+-- Events related
 ------------------------------------------------------------------------------------------
 
--- function ClassLib.Subscribe(oClass, sEvent, callback)
--- 	local tMT = getmetatable(oClass)
--- 	if not tMT.__hooks then
--- 		tMT.__hooks = {}
--- 	end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Calls an Event
+---@param oInput table @The object to call the event on
+---@param sEvent string @The name of the event to call
+---@vararg any @The arguments to pass to the event
+---
+function ClassLib.CallEvent(oInput, sEvent, ...)
+	local tMT = getmetatable(oInput)
+	local tEvents = tMT.__events
 
--- 	local tHooks = tMT.__hooks[sEvent]
--- 	if not tHooks then
--- 		tHooks = {}
--- 		tMT.__hooks[sEvent] = tHooks
--- 	end
+	if not tEvents or not tEvents[sEvent] then return end
 
--- 	local tArgs = {...}
--- 	table.remove(tArgs, 1)
--- 	table.remove(tArgs, 1)
+	for _, callback in ipairs(tEvents[sEvent]) do
+		callback(...)
+	end
 
--- 	tHooks[#tHooks + 1] = {callback, tArgs}
--- end
+	-- If the object is a class, call the event on all instances of it's instances
+	if tMT.__instances then
+		for _, oInstance in ipairs(tMT.__instances) do
+			ClassLib.CallEvent(oInstance, sEvent, ...)
+		end
+	end
+end
 
--- function ClassLib.Unsubscribe(oClass, sEvent, ...)
--- 	local tMT = getmetatable(oClass)
--- 	if not tMT.__hooks then return end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Subscribes to an Event
+---@param oInput table @The object that will subscribe to the event
+---@param sEvent string @The name of the event to subscribe to
+---@param callback function @The callback to call when the event is triggered
+---@return function|nil @The callback
+---
+function ClassLib.Subscribe(oInput, sEvent, callback)
+	local tEvents = getmetatable(oInput).__events
+	if not tEvents then return end
 
--- 	local tHooks = tMT.__hooks[sEvent]
--- 	if not tHooks then return end
+	tEvents[sEvent] = tEvents[sEvent] or {}
+	tEvents[sEvent][#tEvents[sEvent] + 1] = callback
 
--- 	for i = #tHooks, 1, -1 do
--- 		local tHook = tHooks[i]
--- 		if (tHook[1] == ...) then
--- 			table.remove(tHooks, i)
--- 		end
--- 	end
--- end
+	return callback
+end
 
--- function ClassLib.CallEvent(oInstance, sEvent, ...)
--- 	local oClass = ClassLib.GetClass(oInstance)
--- 	local tMT = getmetatable(oClass)
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unsubscribes from all subscribed Events in this Class, optionally passing the function to unsubscribe only that callback
+---@param oInput table @The object to unsubscribe from
+---@param sEvent string @The name of the event to unsubscribe from
+---@param callback? function @The callback to unsubscribe
+---
+function ClassLib.Unsubscribe(oInput, sEvent, callback)
+	local tEvents = getmetatable(oInput).__events
+	if not tEvents[sEvent] then return end
 
--- 	local tHooks = tMT.__hooks[sEvent]
--- 	if not tHooks then return end
+	if type(callback) ~= "function" then
+		tEvents[sEvent] = nil
+		return
+	end
 
--- 	for _, tHook in ipairs(tHooks) do
--- 		local fCallback = tHook[1]
--- 		local tArgs = tHook[2]
-
--- 		local tArgs = {fCallback(oInstance, ...)}
--- 		if tArgs[1] ~= nil then
--- 			return table.unpack(tArgs)
--- 		end
--- 	end
--- end
+	local tNew = {}
+	for i, v in ipairs(tEvents[sEvent]) do
+		if (v ~= callback) then
+			tNew[#tNew + 1] = v
+		end
+	end
+	tEvents[sEvent] = tNew
+end
 
 ------------------------------------------------------------------------------------------
 -- ClassLib
@@ -365,73 +387,4 @@ function ClassLib.Clone(oInstance)
 	end
 
 	return oClone
-end
-
---------------------------------------------------------------------------------
--- ClassLib Events
---------------------------------------------------------------------------------
-
----`🔸 Client`<br>`🔹 Server`<br>
----Calls an Event
----@param oInput table @The object to call the event on
----@param sEvent string @The name of the event to call
----@vararg any @The arguments to pass to the event
----
-function ClassLib.CallEvent(oInput, sEvent, ...)
-	local tMT = getmetatable(oInput)
-	local tEvents = tMT.__events
-
-	if not tEvents or not tEvents[sEvent] then return end
-
-	for _, callback in ipairs(tEvents[sEvent]) do
-		callback(...)
-	end
-
-	-- If the object is a class, call the event on all instances of it's instances
-	if tMT.__instances then
-		for _, oInstance in ipairs(tMT.__instances) do
-			ClassLib.CallEvent(oInstance, sEvent, ...)
-		end
-	end
-end
-
----`🔸 Client`<br>`🔹 Server`<br>
----Subscribes to an Event
----@param oInput table @The object that will subscribe to the event
----@param sEvent string @The name of the event to subscribe to
----@param callback function @The callback to call when the event is triggered
----@return function|nil @The callback
----
-function ClassLib.Subscribe(oInput, sEvent, callback)
-	local tEvents = getmetatable(oInput).__events
-	if not tEvents then return end
-
-	tEvents[sEvent] = tEvents[sEvent] or {}
-	tEvents[sEvent][#tEvents[sEvent] + 1] = callback
-
-	return callback
-end
-
----`🔸 Client`<br>`🔹 Server`<br>
----Unsubscribes from all subscribed Events in this Class, optionally passing the function to unsubscribe only that callback
----@param oInput table @The object to unsubscribe from
----@param sEvent string @The name of the event to unsubscribe from
----@param callback? function @The callback to unsubscribe
----
-function ClassLib.Unsubscribe(oInput, sEvent, callback)
-	local tEvents = getmetatable(oInput).__events
-	if not tEvents[sEvent] then return end
-
-	if type(callback) ~= "function" then
-		tEvents[sEvent] = nil
-		return
-	end
-
-	local tNew = {}
-	for i, v in ipairs(tEvents[sEvent]) do
-		if (v ~= callback) then
-			tNew[#tNew + 1] = v
-		end
-	end
-	tEvents[sEvent] = tNew
 end
