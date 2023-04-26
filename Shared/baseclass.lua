@@ -155,13 +155,17 @@ function BaseClass.Inherit(sClassName)
     return ClassLib.Inherit(BaseClass, sClassName)
 end
 
+------------------------------------------------------------------------------------------
+-- Events methods
+------------------------------------------------------------------------------------------
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Calls an Event
 ---@param sEvent string @The name of the event to call
 ---@vararg any @The arguments to pass to the event
 ---
-function BaseClass.CallEvent(sEvent, ...)
-    return ClassLib.CallEvent(BaseClass, sEvent, ...)
+function BaseClass.ClassCall(sEvent, ...)
+    return ClassLib.Call(BaseClass, sEvent, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -170,7 +174,7 @@ end
 ---@param callback function @The callback to call when the event is triggered
 ---@return function|nil @The callback
 ---
-function BaseClass.Subscribe(sEvent, callback)
+function BaseClass.ClassSubscribe(sEvent, callback)
     return ClassLib.Subscribe(BaseClass, sEvent, callback)
 end
 
@@ -179,8 +183,36 @@ end
 ---@param sEvent string @The name of the event to unsubscribe from
 ---@param callback? function @The callback to unsubscribe
 ---
-function BaseClass.Unsubscribe(sEvent, callback)
-    ClassLib.Unsubscribe(BaseClass, sEvent, callback)
+function BaseClass.ClassUnsubscribe(sEvent, callback)
+    return ClassLib.Unsubscribe(BaseClass, sEvent, callback)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Calls an Event on the instance
+---@param sName string @The name of the event to call
+---@vararg any @The arguments to pass to the event
+---
+function BaseClass:Call(sName, ...)
+    return ClassLib.Call(self, sName, ...)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Subscribes to an Event on the instance
+---@param sName string @The name of the event to subscribe to
+---@param callback function @The callback to call when the event is triggered
+---@return function|nil @The callback
+---
+function BaseClass:Subscribe(sName, callback)
+    return ClassLib.Subscribe(self, sName, callback)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unsubscribes from all subscribed Events in this instance, optionally passing the function to unsubscribe only that callback
+---@param sName string @The name of the event to unsubscribe from
+---@param callback? function @The callback to unsubscribe
+---
+function BaseClass:Unsubscribe(sName, callback)
+    return ClassLib.Unsubscribe(self, sName, callback)
 end
 
 ------------------------------------------------------------------------------------------
@@ -215,18 +247,3 @@ end
 --     end
 -- end
 
-------------------------------------------------------------------------------------------
--- Events methods
-------------------------------------------------------------------------------------------
-
--- function BaseClass:CallEvent(sName, ...)
---     return ClassLib.CallEvent(self, sName, ...)
--- end
-
--- function BaseClass:Subscribe(sName, callback)
---     return ClassLib.Subscribe(self, sName, callback)
--- end
-
--- function BaseClass:Unsubscribe(sName, callback)
---     return ClassLib.Unsubscribe(self, sName, callback)
--- end

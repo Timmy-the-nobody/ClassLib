@@ -94,35 +94,21 @@ end, 2000)
 Timer.SetTimeout(function()
     print("\n\n-----------------------------")
 
+    Person.ClassSubscribe("Something", function(...)
+        print("hey", ...)
+    end)
+
+    Person.ClassCall("Something")
+
     local subfunc = ePerson3:Subscribe("Something", function()
         print("something")
     end)
 
-    Person.Subscribe("Something", function(...)
-        print("hey", ...)
-    end)
-
-    ePerson3:CallEvent("Something")
+    ePerson3:Call("Something")
 
     ePerson3:Unsubscribe("Something", subfunc)
 
-    ePerson3:CallEvent("Something")
-
-    -- Person.Subscribe("Destroy", function(self)
-    --     print(self:GetID(), "destroy 1")
-    -- end)
-
-    -- ePerson3:Subscribe("Destroy", function(self)
-    --     print(self:GetID(), "destroy 2")
-    -- end)
-
-    -- print(Person.Subscribe == ePerson.Subscribe)
-
-    -- ePerson3:Destroy()
-
-    -- local e = Person("TEPOSJGEPOSIJGESPIJ")
-
-    -- Person.CallEvent("MyEvent", 1, 3, 5)
+    ePerson3:Call("Something")
 
     print("-----------------------------")
 end, 1500)

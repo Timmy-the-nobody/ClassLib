@@ -162,7 +162,7 @@ end
 ---@param sEvent string @The name of the event to call
 ---@vararg any @The arguments to pass to the event
 ---
-function ClassLib.CallEvent(oInput, sEvent, ...)
+function ClassLib.Call(oInput, sEvent, ...)
 	local tMT = getmetatable(oInput)
 	local tEvents = tMT.__events
 
@@ -175,7 +175,7 @@ function ClassLib.CallEvent(oInput, sEvent, ...)
 	-- If the object is a class, call the event on all instances of it's instances
 	if tMT.__instances then
 		for _, oInstance in ipairs(tMT.__instances) do
-			ClassLib.CallEvent(oInstance, sEvent, ...)
+			ClassLib.Call(oInstance, sEvent, ...)
 		end
 	end
 end
@@ -270,9 +270,9 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 	function oNewClass.Inherit(sName) return ClassLib.Inherit(oNewClass, sName) end
 	-- function oNewClass.GetClassName() return ClassLib.GetClassName(oNewClass) end
 
-	function oNewClass.CallEvent(sName, ...) return ClassLib.CallEvent(oNewClass, sName, ...) end
-	function oNewClass.Subscribe(sName, callback) return ClassLib.Subscribe(oNewClass, sName, callback) end
-	function oNewClass.Unsubscribe(sName, callback) return ClassLib.Unsubscribe(oNewClass, sName, callback) end
+	function oNewClass.ClassCall(sName, ...) return ClassLib.Call(oNewClass, sName, ...) end
+	function oNewClass.ClassSubscribe(sName, callback) return ClassLib.Subscribe(oNewClass, sName, callback) end
+	function oNewClass.ClassUnsubscribe(sName, callback) return ClassLib.Unsubscribe(oNewClass, sName, callback) end
 
 	tSerializedClasses[sClassName] = oNewClass
 
@@ -315,17 +315,12 @@ function ClassLib.NewInstance(oClass, ...)
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
 	tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
 
-	-- Add events methods to the instance
-	function oInstance:CallEvent(sName, ...) return ClassLib.CallEvent(self, sName, ...) end
-	function oInstance:Subscribe(sName, callback) return ClassLib.Subscribe(self, sName, callback) end
-	function oInstance:Unsubscribe(sName, callback) return ClassLib.Unsubscribe(self, sName, callback) end
-
 	-- Call constructor
 	if rawget(oClass, "Constructor") then
 		rawget(oClass, "Constructor")(oInstance, ...)
 	end
 
-	ClassLib.CallEvent(oClass, "Spawn", oInstance)
+	ClassLib.Call(oClass, "Spawn", oInstance)
 
 	return oInstance
 end
@@ -342,7 +337,7 @@ function ClassLib.Destroy(oInstance, ...)
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
 
-	ClassLib.CallEvent(oClass, "Destroy", oInstance)
+	ClassLib.Call(oClass, "Destroy", oInstance)
 
 	-- Call class destructor
 	if rawget(oClass, "Destructor") then
