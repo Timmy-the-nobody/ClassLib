@@ -5,11 +5,32 @@
 BaseClass = {}
 
 setmetatable(BaseClass, {
-    __class_name = "BaseClass",
+    __classname = "BaseClass",
     __call = function(self, ...)
-        return ClassLib.NewInstance(self, ...)
+        return self:NewInstance(...)
     end
 })
+
+------------------------------------------------------------------------------------------
+-- Instance functions
+------------------------------------------------------------------------------------------
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Creates a new instance of the class
+---@param ... any @Arguments to pass to the constructor
+---@return table @The new instance
+---
+function BaseClass:NewInstance(...)
+    return ClassLib.NewInstance(self, ...)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Destroys the instance
+---@param ... any @Arguments to pass to the destructor
+---
+function BaseClass:Destroy(...)
+	return ClassLib.Destroy(self, ...)
+end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Called after an instance is created
@@ -21,14 +42,6 @@ end
 ---Called when an instance is about to be destroyed, return `false` to cancel the destruction
 ---
 function BaseClass:Destructor()
-end
-
----`🔸 Client`<br>`🔹 Server`<br>
----Destroys the instance
----@param ... any @Arguments to pass to the destructor
----
-function BaseClass:Destroy(...)
-	return ClassLib.Destroy(self, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>

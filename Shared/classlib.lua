@@ -138,7 +138,9 @@ end
 ---
 function ClassLib.GetClassName(oClass)
 	local tMT = getmetatable(oClass)
-	return tMT.__class_name
+	if not tMT then return end
+
+	return tMT.__classname
 end
 
 -- Internal function to get an instance by its ID
@@ -250,7 +252,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 		__concat = tFromMT.__concat,
 		__tostring = tFromMT.__tostring,
 
-		__class_name = sClassName,
+		__classname = sClassName,
 		__events = {},
 		__instances = {},
 		__next_id = 1,
@@ -301,7 +303,7 @@ function ClassLib.NewInstance(oClass, ...)
 		__concat = oClass.__concat,
 		__tostring = oClass.__tostring,
 
-		__class_name = tClassMT.__class_name,
+		__classname = tClassMT.__classname,
 		__is_valid = true,
 		-- __nw_values = {}
 		__events = {}
