@@ -8,7 +8,7 @@ end
 
 -- Here we add a destructor to the class, which is called when we call `instance:Destroy()` to destroy an instance, with `self` being the instance
 function Person:Destructor()
-    print("Person "..self:GetLabel().." is being destroyed")
+    print("Person ["..self:GetLabel().."] `Destructor` called")
 end
 
 -- Here we create some instances of the Person class
@@ -33,7 +33,8 @@ Timer.SetTimeout(function()
     ePerson2:Destroy()
     print(ePerson2:GetLabel(), "is valid?", ePerson2:IsValid())
 
-    print(NanosTable.Dump(Person))
+    -- ePerson2:SetNWValue("foo", "bar")
+    -- print("ePerson2:GetNWValue", ePerson2:GetNWValue("foo"))
 end, 1000)
 
 ------------------------------------------------------------------------------------------
@@ -74,16 +75,54 @@ end
 -- Here we create a new instance of the Employee class
 local eEmployee = Employee("Janett")
 
+
+
 -- Here we print the amount of classes from which the Person class inherits, in this case it'll print 2 since it inherits from Person, and Person inherits from BaseClass
 Timer.SetTimeout(function()
-    print("#Employee.GetAllParentClasses()", Employee.GetAllParentClasses()[2] == BaseClass)
+    -- print("#Employee.GetAllParentClasses()", Employee.GetAllParentClasses()[2] == BaseClass)
 
-    -- print(NanosTable.Dump(Person))
-    print(#Person.GetAll())
-    print(ClassLib.GetClassName(eEmployee))
-    print("test", eEmployee:GetClassName())
-    print(NanosTable.Dump(eEmployee))
+    -- -- print(NanosTable.Dump(Person))
+    -- print(#Person.GetAll())
+    -- print(ClassLib.GetClassName(eEmployee))
+    -- print("test", eEmployee:GetClassName())
+    -- print(NanosTable.Dump(eEmployee))
 
-    print("---------", ePerson4:GetLabel())
-    print("---------", ePerson4:GetLabel())
-end, 1000)
+    -- print("---------", ePerson4:GetLabel())
+    -- print("---------", ePerson4:GetLabel())
+end, 2000)
+
+Timer.SetTimeout(function()
+    print("\n\n-----------------------------")
+
+    local subfunc = ePerson3:Subscribe("Something", function()
+        print("something")
+    end)
+
+    Person.Subscribe("Something", function(...)
+        print("hey", ...)
+    end)
+
+    ePerson3:CallEvent("Something")
+
+    ePerson3:Unsubscribe("Something", subfunc)
+
+    ePerson3:CallEvent("Something")
+
+    -- Person.Subscribe("Destroy", function(self)
+    --     print(self:GetID(), "destroy 1")
+    -- end)
+
+    -- ePerson3:Subscribe("Destroy", function(self)
+    --     print(self:GetID(), "destroy 2")
+    -- end)
+
+    -- print(Person.Subscribe == ePerson.Subscribe)
+
+    -- ePerson3:Destroy()
+
+    -- local e = Person("TEPOSJGEPOSIJGESPIJ")
+
+    -- Person.CallEvent("MyEvent", 1, 3, 5)
+
+    print("-----------------------------")
+end, 1500)

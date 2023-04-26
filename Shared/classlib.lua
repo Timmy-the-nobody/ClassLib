@@ -142,6 +142,62 @@ local function __getInstanceByID(tMT, iID)
 end
 
 ------------------------------------------------------------------------------------------
+-- Hooks
+------------------------------------------------------------------------------------------
+
+-- function ClassLib.Subscribe(oClass, sEvent, callback)
+-- 	local tMT = getmetatable(oClass)
+-- 	if not tMT.__hooks then
+-- 		tMT.__hooks = {}
+-- 	end
+
+-- 	local tHooks = tMT.__hooks[sEvent]
+-- 	if not tHooks then
+-- 		tHooks = {}
+-- 		tMT.__hooks[sEvent] = tHooks
+-- 	end
+
+-- 	local tArgs = {...}
+-- 	table.remove(tArgs, 1)
+-- 	table.remove(tArgs, 1)
+
+-- 	tHooks[#tHooks + 1] = {callback, tArgs}
+-- end
+
+-- function ClassLib.Unsubscribe(oClass, sEvent, ...)
+-- 	local tMT = getmetatable(oClass)
+-- 	if not tMT.__hooks then return end
+
+-- 	local tHooks = tMT.__hooks[sEvent]
+-- 	if not tHooks then return end
+
+-- 	for i = #tHooks, 1, -1 do
+-- 		local tHook = tHooks[i]
+-- 		if (tHook[1] == ...) then
+-- 			table.remove(tHooks, i)
+-- 		end
+-- 	end
+-- end
+
+-- function ClassLib.CallEvent(oInstance, sEvent, ...)
+-- 	local oClass = ClassLib.GetClass(oInstance)
+-- 	local tMT = getmetatable(oClass)
+
+-- 	local tHooks = tMT.__hooks[sEvent]
+-- 	if not tHooks then return end
+
+-- 	for _, tHook in ipairs(tHooks) do
+-- 		local fCallback = tHook[1]
+-- 		local tArgs = tHook[2]
+
+-- 		local tArgs = {fCallback(oInstance, ...)}
+-- 		if tArgs[1] ~= nil then
+-- 			return table.unpack(tArgs)
+-- 		end
+-- 	end
+-- end
+
+------------------------------------------------------------------------------------------
 -- ClassLib
 ------------------------------------------------------------------------------------------
 
@@ -151,6 +207,9 @@ end
 ---@return table @The new class
 ---
 function ClassLib.Inherit(oInheritFrom, sClassName)
+	if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
+	if tSerializedClasses[sClassName] then error("[ClassLib] Attempt to create a class with a name that already exists") end
+
 	assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
 	local tFromMT = getmetatable(oInheritFrom)
@@ -168,18 +227,14 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 		__pow = tFromMT.__pow,
 		__concat = tFromMT.__concat,
 		__tostring = tFromMT.__tostring,
+
+		__class_name = sClassName,
+		__events = {},
+		__instances = {},
+		__next_id = 1,
 	})
 
-	-- Add instance table to the new class
 	local tClassMT = getmetatable(oNewClass)
-    tClassMT.__next_id = 1
-    tClassMT.__instances = {}
-
-	-- Register class name if available (used for network serialization)
-	if sClassName then
-		tClassMT.__class_name = sClassName
-		tSerializedClasses[sClassName] = oNewClass
-	end
 
 	-- Add static functions to the new class
     function oNewClass.GetAll() return tClassMT.__instances end
@@ -190,6 +245,12 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
 	function oNewClass.Inherit(sName) return ClassLib.Inherit(oNewClass, sName) end
 	-- function oNewClass.GetClassName() return ClassLib.GetClassName(oNewClass) end
+
+	function oNewClass.CallEvent(sName, ...) return ClassLib.CallEvent(oNewClass, sName, ...) end
+	function oNewClass.Subscribe(sName, callback) return ClassLib.Subscribe(oNewClass, sName, callback) end
+	function oNewClass.Unsubscribe(sName, callback) return ClassLib.Unsubscribe(oNewClass, sName, callback) end
+
+	tSerializedClasses[sClassName] = oNewClass
 
 	return oNewClass
 end
@@ -217,8 +278,11 @@ function ClassLib.NewInstance(oClass, ...)
 		__pow = oClass.__pow,
 		__concat = oClass.__concat,
 		__tostring = oClass.__tostring,
+
 		__class_name = tClassMT.__class_name,
-		__is_valid = true
+		__is_valid = true,
+		-- __nw_values = {}
+		__events = {}
 	})
 
 	-- Add instance to the class instance table
@@ -227,10 +291,17 @@ function ClassLib.NewInstance(oClass, ...)
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
 	tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
 
+	-- Add events methods to the instance
+	function oInstance:CallEvent(sName, ...) return ClassLib.CallEvent(self, sName, ...) end
+	function oInstance:Subscribe(sName, callback) return ClassLib.Subscribe(self, sName, callback) end
+	function oInstance:Unsubscribe(sName, callback) return ClassLib.Unsubscribe(self, sName, callback) end
+
 	-- Call constructor
 	if rawget(oClass, "Constructor") then
 		rawget(oClass, "Constructor")(oInstance, ...)
 	end
+
+	ClassLib.CallEvent(oClass, "Spawn", oInstance)
 
 	return oInstance
 end
@@ -240,10 +311,14 @@ end
 ---@param oInstance table @The instance to destroy
 ---
 function ClassLib.Destroy(oInstance, ...)
-	assert((type(oInstance) == "table"), "[ClassLib] Called delete without object")
+	if not oInstance.IsValid or not oInstance:IsValid() then
+		error("[ClassLib] Attempt to delete an invalid object")
+	end
 
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
+
+	ClassLib.CallEvent(oClass, "Destroy", oInstance)
 
 	-- Call class destructor
 	if rawget(oClass, "Destructor") then
@@ -290,4 +365,73 @@ function ClassLib.Clone(oInstance)
 	end
 
 	return oClone
+end
+
+--------------------------------------------------------------------------------
+-- ClassLib Events
+--------------------------------------------------------------------------------
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Calls an Event
+---@param oInput table @The object to call the event on
+---@param sEvent string @The name of the event to call
+---@vararg any @The arguments to pass to the event
+---
+function ClassLib.CallEvent(oInput, sEvent, ...)
+	local tMT = getmetatable(oInput)
+	local tEvents = tMT.__events
+
+	if not tEvents or not tEvents[sEvent] then return end
+
+	for _, callback in ipairs(tEvents[sEvent]) do
+		callback(...)
+	end
+
+	-- If the object is a class, call the event on all instances of it's instances
+	if tMT.__instances then
+		for _, oInstance in ipairs(tMT.__instances) do
+			ClassLib.CallEvent(oInstance, sEvent, ...)
+		end
+	end
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Subscribes to an Event
+---@param oInput table @The object that will subscribe to the event
+---@param sEvent string @The name of the event to subscribe to
+---@param callback function @The callback to call when the event is triggered
+---@return function|nil @The callback
+---
+function ClassLib.Subscribe(oInput, sEvent, callback)
+	local tEvents = getmetatable(oInput).__events
+	if not tEvents then return end
+
+	tEvents[sEvent] = tEvents[sEvent] or {}
+	tEvents[sEvent][#tEvents[sEvent] + 1] = callback
+
+	return callback
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unsubscribes from all subscribed Events in this Class, optionally passing the function to unsubscribe only that callback
+---@param oInput table @The object to unsubscribe from
+---@param sEvent string @The name of the event to unsubscribe from
+---@param callback? function @The callback to unsubscribe
+---
+function ClassLib.Unsubscribe(oInput, sEvent, callback)
+	local tEvents = getmetatable(oInput).__events
+	if not tEvents[sEvent] then return end
+
+	if type(callback) ~= "function" then
+		tEvents[sEvent] = nil
+		return
+	end
+
+	local tNew = {}
+	for i, v in ipairs(tEvents[sEvent]) do
+		if (v ~= callback) then
+			tNew[#tNew + 1] = v
+		end
+	end
+	tEvents[sEvent] = tNew
 end

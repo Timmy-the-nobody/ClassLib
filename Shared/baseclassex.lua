@@ -75,7 +75,3 @@ function BaseClassEx:SetIcon(sPath)
     if (type(sPath) ~= "string") then return end
     self.icon = sPath
 end
-
-Timer.SetTimeout(function()
-    print(NanosTable.Dump(BaseClassEx))
-end, 3000)

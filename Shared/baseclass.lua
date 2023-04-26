@@ -143,53 +143,78 @@ function BaseClass.Inherit(sClassName)
     return ClassLib.Inherit(BaseClass, sClassName)
 end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Calls an Event
+---@param sEvent string @The name of the event to call
+---@vararg any @The arguments to pass to the event
+---
+function BaseClass.CallEvent(sEvent, ...)
+    return ClassLib.CallEvent(BaseClass, sEvent, ...)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Subscribes to an Event
+---@param sEvent string @The name of the event to subscribe to
+---@param callback function @The callback to call when the event is triggered
+---@return function|nil @The callback
+---
+function BaseClass.Subscribe(sEvent, callback)
+    return ClassLib.Subscribe(BaseClass, sEvent, callback)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unsubscribes from all subscribed Events in this Class, optionally passing the function to unsubscribe only that callback
+---@param sEvent string @The name of the event to unsubscribe from
+---@param callback? function @The callback to unsubscribe
+---
+function BaseClass.Unsubscribe(sEvent, callback)
+    ClassLib.Unsubscribe(BaseClass, sEvent, callback)
+end
+
 ------------------------------------------------------------------------------------------
 -- Networking
 ------------------------------------------------------------------------------------------
 
-function BaseClass:SetValue(sKey, xValue, bBroadcast)
-    self[sKey] = xValue
+-- ---`🔸 Client`<br>`🔹 Server`<br>
+-- ---Returns the value of a key
+-- ---@param sKey string @Key
+-- ---@param xFallback any @Fallback value
+-- ---@return any @Value
+-- ---
+-- function BaseClass:GetNWValue(sKey, xFallback)
+--     return getmetatable(self).__nw_values[sKey]
+-- end
 
-    if Server and bBroadcast then
+-- ---`🔸 Client`<br>`🔹 Server`<br>
+-- ---Sets the value of a key
+-- ---@param sKey string @Key
+-- ---@param xValue any @Value
+-- ---
+-- function BaseClass:SetNWValue(sKey, xValue)
+--     if (sKey == nil) then return end
 
-        -- Events.CallRemote("CLib:SetKV", )
-    end
-end
+--     getmetatable(self).__nw_values[sKey] = xValue
+
+--     if Server then
+--         local sClassName = self:GetClassName()
+--         if not sClassName then return end
+
+--         Events.BroadcastRemote("CLib:SetKV", self:GetClassName(), self:GetID(), sKey, xValue)
+--     end
+-- end
 
 ------------------------------------------------------------------------------------------
--- Base Class Methods
--- TODO: Remove these
+-- Events methods
 ------------------------------------------------------------------------------------------
 
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Returns the label of the instance
--- ---@return string @Instance label
--- ---
--- function BaseClass:GetLabel()
---     return self.label or ""
+-- function BaseClass:CallEvent(sName, ...)
+--     return ClassLib.CallEvent(self, sName, ...)
 -- end
 
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Sets the label of the instance
--- ---@param sLabel string @New label
--- ---
--- function BaseClass:SetLabel(sLabel)
---     self.label = tostring(sLabel or "")
+-- function BaseClass:Subscribe(sName, callback)
+--     return ClassLib.Subscribe(self, sName, callback)
 -- end
 
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Returns the description of the instance
--- ---@return string @Instance description
--- ---
--- function BaseClass:GetDescription()
---     return self.description or ""
+-- function BaseClass:Unsubscribe(sName, callback)
+--     return ClassLib.Unsubscribe(self, sName, callback)
 -- end
-
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Sets the description of the instance
--- ---@param sDescription string @New description
--- ---
--- function BaseClass:SetDescription(sDescription)
---     self.description = tostring(sDescription or "")
--- end
-
