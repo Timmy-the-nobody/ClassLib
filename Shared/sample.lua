@@ -94,21 +94,23 @@ end, 2000)
 Timer.SetTimeout(function()
     print("\n\n-----------------------------")
 
+    -- Subscribe/call/unsubscribe to events on the instance
+    local some_callback = ePerson3:Subscribe("Something", function(...)
+        print(...) -- foo bar
+    end)
+
+    ePerson3:Call("Something", "foo", "bar")
+    ePerson3:Unsubscribe("Something", some_callback)
+
+    -- Subscribe/call/unsubscribe to events on the class (will also trigger events with the same name on the instances that listen to it)
     Person.ClassSubscribe("Something", function(...)
-        print("hey", ...)
+        local tArgs = {...}
+        print(tArgs[1]) -- foo
+        print(tArgs[2]) -- bar
     end)
 
-    Person.ClassCall("Something")
-
-    local subfunc = ePerson3:Subscribe("Something", function()
-        print("something")
-    end)
-
-    ePerson3:Call("Something")
-
-    ePerson3:Unsubscribe("Something", subfunc)
-
-    ePerson3:Call("Something")
+    Person.ClassCall("Something", "foo", "bar")
+    Person.ClassUnsubscribe("Something")
 
     print("-----------------------------")
 end, 1500)
