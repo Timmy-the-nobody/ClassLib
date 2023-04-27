@@ -171,7 +171,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Subscribes to an Event
 ---@param sEvent string @The name of the event to subscribe to
----@param callback function @The callback to call when the event is triggered
+---@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
 ---@return function|nil @The callback
 ---
 function BaseClass.ClassSubscribe(sEvent, callback)

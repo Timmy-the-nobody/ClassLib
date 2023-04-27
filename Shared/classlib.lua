@@ -169,7 +169,9 @@ function ClassLib.Call(oInput, sEvent, ...)
 	if not tEvents or not tEvents[sEvent] then return end
 
 	for _, callback in ipairs(tEvents[sEvent]) do
-		callback(...)
+		if (callback(...) == false) then
+			ClassLib.Unsubscribe(oInput, sEvent, callback)
+		end
 	end
 
 	-- If the object is a class, call the event on all instances of it's instances
@@ -184,7 +186,7 @@ end
 ---Subscribes to an Event
 ---@param oInput table @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
----@param callback function @The callback to call when the event is triggered
+---@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
 ---@return function|nil @The callback
 ---
 function ClassLib.Subscribe(oInput, sEvent, callback)

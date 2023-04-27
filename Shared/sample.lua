@@ -97,8 +97,10 @@ Timer.SetTimeout(function()
     -- Subscribe/call/unsubscribe to events on the instance
     local some_callback = ePerson3:Subscribe("Something", function(...)
         print(...) -- foo bar
+        return false
     end)
 
+    ePerson3:Call("Something", "foo", "bar")
     ePerson3:Call("Something", "foo", "bar")
     ePerson3:Unsubscribe("Something", some_callback)
 
