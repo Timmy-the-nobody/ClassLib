@@ -13,7 +13,7 @@ BaseClassEx = BaseClass.Inherit("BaseClassEx")
 ---@return string @Instance label
 ---
 function BaseClassEx:GetLabel()
-    return self.label or ""
+    return self.label
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
