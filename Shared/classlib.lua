@@ -339,11 +339,11 @@ function ClassLib.Destroy(oInstance, ...)
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
 
-	ClassLib.Call(oClass, "Destroy", oInstance)
-
 	-- Call class destructor
 	if rawget(oClass, "Destructor") then
 		local bShouldDestroy = rawget(oClass, "Destructor")(oInstance, ...)
+
+		-- If the destructor returns false, don't destroy the instance
 		if (bShouldDestroy == false) then return end
 	end
 
@@ -364,6 +364,8 @@ function ClassLib.Destroy(oInstance, ...)
 	-- function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
 	-- function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
 	function tMT:__newindex() error("[ClassLib] Attempt to set a value on a destroyed object") end
+
+	ClassLib.Call(oClass, "Destroy", oInstance)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
