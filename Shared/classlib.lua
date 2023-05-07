@@ -223,6 +223,26 @@ function ClassLib.Unsubscribe(oInput, sEvent, callback)
 	tEvents[sEvent] = tNew
 end
 
+-- function ClassLib.EmulateJS(oClass, oWebUI)
+-- 	local tClassMT = getmetatable(oClass)
+-- 	if not tClassMT then return end
+
+-- 	if (getmetatable(oWebUI) ~= WebUI) then return end
+
+-- 	tClassMT.__emulated_webuis = tClassMT.__emulated_webuis or {}
+-- 	tClassMT.__emulated_webuis[#tClassMT.__emulated_webuis + 1] = oWebUI
+-- 	oWebUI:ExecuteJavaScript([[
+-- 		console.log("Hello from Lua!")
+-- 	]])
+-- 	oClass.ClassSubscribe("Spawn", function(self)
+-- 		if not self.GetLabel then return end
+-- 		print("spawn")
+-- 		oWebUI:ExecuteJavaScript([[
+-- 			console.log("Hello from Lua!")
+-- 		]])
+-- 	end)
+-- end
+
 ------------------------------------------------------------------------------------------
 -- ClassLib
 ------------------------------------------------------------------------------------------
@@ -272,9 +292,12 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 	function oNewClass.Inherit(sName) return ClassLib.Inherit(oNewClass, sName) end
 	-- function oNewClass.GetClassName() return ClassLib.GetClassName(oNewClass) end
 
+	-- Add instance functions to the new class (events related)
 	function oNewClass.ClassCall(sName, ...) return ClassLib.Call(oNewClass, sName, ...) end
 	function oNewClass.ClassSubscribe(sName, callback) return ClassLib.Subscribe(oNewClass, sName, callback) end
 	function oNewClass.ClassUnsubscribe(sName, callback) return ClassLib.Unsubscribe(oNewClass, sName, callback) end
+
+	-- function oNewClass.EmulateJS(oWebUI) return ClassLib.EmulateJS(oNewClass, oWebUI) end
 
 	tSerializedClasses[sClassName] = oNewClass
 
