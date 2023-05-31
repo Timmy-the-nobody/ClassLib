@@ -110,7 +110,11 @@ end
 ---
 function ClassLib.GetClass(oInstance)
 	if (type(oInstance) ~= "table") then return end
-	return getmetatable(oInstance).__index
+
+	local tMT = getmetatable(oInstance)
+	if not tMT then return end
+
+	return tMT.__index
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
