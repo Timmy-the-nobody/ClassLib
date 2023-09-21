@@ -157,7 +157,7 @@ local function __getInstanceByID(tMT, iID)
 end
 
 ------------------------------------------------------------------------------------------
--- Events related
+-- Local Events
 ------------------------------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -227,6 +227,126 @@ function ClassLib.Unsubscribe(oInput, sEvent, callback)
 	tEvents[sEvent] = tNew
 end
 
+------------------------------------------------------------------------------------------
+-- Remote Events
+------------------------------------------------------------------------------------------
+
+if Client then
+	---`🔸 Client`<br>
+	---Calls a remote event from the client to the server
+	---@param oInput table @The object to call the event from
+	---@param sEvent string @The name of the event to call
+	---@vararg any @The arguments to pass to the event
+	---
+	function ClassLib.CallRemote_Client(oInput, sEvent, ...)
+		if (type(sEvent) ~= "string") then return end
+
+		local sClass = ClassLib.GetClassName(oInput)
+		if not sClass then return end
+
+		Events.CallRemote("🍇", sClass, oInput:GetID(), sEvent, ...)
+	end
+
+	Events.SubscribeRemote("🍇", function(sClassName, iID, sEvent, ...)
+		local tClass = tSerializedClasses[sClassName]
+		if not tClass then return end
+
+		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
+		if not oInstance then return end
+
+		local tRemoteEvents = getmetatable(tClass).__remote_events
+		if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
+
+		for _, callback in ipairs(tRemoteEvents[sEvent]) do
+			callback(oInstance, ...)
+		end
+	end)
+
+elseif Server then
+	---`🔹 Server`<br>
+	---Calls a remote event from the server to the client
+	---@param oInput table @The object to call the event on
+	---@param sEvent string @The name of the event to call
+	---@param xPlayer Player|boolean @The player to send the event to, or true to send to all players
+	---@vararg any @The arguments to pass to the event
+	---
+	function ClassLib.CallRemote_Server(oInput, sEvent, xPlayer, ...)
+		if (type(sEvent) ~= "string") then return end
+
+		local sClass = ClassLib.GetClassName(oInput)
+		if not sClass then return end
+
+		if (getmetatable(xPlayer) ~= Player) then
+			if (xPlayer ~= true) then return end
+			Events.BroadcastRemote("🍇", sClass, oInput:GetID(), sEvent, ...)
+			return
+		end
+
+		Events.CallRemote("🍇", xPlayer, sClass, oInput:GetID(), sEvent, ...)
+	end
+
+	Events.SubscribeRemote("🍇", function(pPlayer, sClassName, iID, sEvent, ...)
+		local tClass = tSerializedClasses[sClassName]
+		if not tClass then return end
+
+		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
+		if not oInstance then return end
+
+		local tRemoteEvents = getmetatable(tClass).__remote_events
+		if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
+
+		for _, callback in ipairs(tRemoteEvents[sEvent]) do
+			callback(oInstance, pPlayer, ...)
+		end
+	end)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Subscribes to a remote event
+---@param oInput table @The object that will subscribe to the event
+---@param sEvent string @The name of the event to subscribe to
+---@param callback function @The callback to call when the event is triggered
+---@return function|nil @The callback
+---
+function ClassLib.SubscribeRemote(oInput, sEvent, callback)
+	if (type(sEvent) ~= "string") then return end
+
+	local tRemoteEvents = getmetatable(oInput).__remote_events
+	if not tRemoteEvents then return end
+
+	tRemoteEvents[sEvent] = tRemoteEvents[sEvent] or {}
+	tRemoteEvents[sEvent][#tRemoteEvents[sEvent] + 1] = callback
+
+	return callback
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unsubscribes from a remote event
+---@param oInput table @The object to unsubscribe from
+---@param sEvent string @The name of the event to unsubscribe from+
+---@param callback? function @The callback to unsubscribe
+---
+function ClassLib.UnsubscribeRemote(oInput, sEvent, callback)
+	if (type(sEvent) ~= "string") then return end
+
+	local tRemoteEvents = getmetatable(oInput).__remote_events
+	if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
+
+	if (type(callback) ~= "function") then
+		tRemoteEvents[sEvent] = nil
+		return
+	end
+
+	local tNewCallbacks = {}
+	for _, v in ipairs(tRemoteEvents[sEvent]) do
+		if (v ~= callback) then
+			tNewCallbacks[#tNewCallbacks + 1] = v
+		end
+	end
+
+	tRemoteEvents[sEvent] = tNewCallbacks
+end
+
 -- function ClassLib.EmulateJS(oClass, oWebUI)
 -- 	local tClassMT = getmetatable(oClass)
 -- 	if not tClassMT then return end
@@ -254,6 +374,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from the passed class
 ---@param oInheritFrom table @The class to inherit from
+---@param sClassName string @The name of the class
 ---@return table @The new class
 ---
 function ClassLib.Inherit(oInheritFrom, sClassName)
@@ -280,6 +401,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 
 		__classname = sClassName,
 		__events = {},
+		__remote_events = {},
 		__instances = {},
 		__next_id = 1,
 	})
@@ -294,12 +416,25 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
 	function oNewClass.Inherit(sName) return ClassLib.Inherit(oNewClass, sName) end
-	-- function oNewClass.GetClassName() return ClassLib.GetClassName(oNewClass) end
 
-	-- Add instance functions to the new class (events related)
-	function oNewClass.ClassCall(sName, ...) return ClassLib.Call(oNewClass, sName, ...) end
-	function oNewClass.ClassSubscribe(sName, callback) return ClassLib.Subscribe(oNewClass, sName, callback) end
-	function oNewClass.ClassUnsubscribe(sName, callback) return ClassLib.Unsubscribe(oNewClass, sName, callback) end
+	-- Adds static functions related to local events to the new class
+	function oNewClass.ClassCall(sEvent, ...)
+		return ClassLib.Call(oNewClass, sEvent, ...)
+	end
+	function oNewClass.ClassSubscribe(sEvent, callback)
+		return ClassLib.Subscribe(oNewClass, sEvent, callback)
+	end
+	function oNewClass.ClassUnsubscribe(sEvent, callback)
+		return ClassLib.Unsubscribe(oNewClass, sEvent, callback)
+	end
+
+	-- Adds static functions related to remote events to the new class
+	function oNewClass.SubscribeRemote(sEvent, callback)
+		return ClassLib.SubscribeRemote(oNewClass, sEvent, callback)
+	end
+	function oNewClass.UnsubscribeRemote(sEvent, callback)
+		return ClassLib.UnsubscribeRemote(oNewClass, sEvent, callback)
+	end
 
 	-- function oNewClass.EmulateJS(oWebUI) return ClassLib.EmulateJS(oNewClass, oWebUI) end
 
@@ -334,7 +469,6 @@ function ClassLib.NewInstance(oClass, ...)
 
 		__classname = tClassMT.__classname,
 		__is_valid = true,
-		-- __nw_values = {}
 		__events = {}
 	})
 
