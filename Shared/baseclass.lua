@@ -189,35 +189,85 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Calls an Event on the instance
----@param sName string @The name of the event to call
+---@param sEvent string @The name of the event to call
 ---@vararg any @The arguments to pass to the event
 ---
-function BaseClass:Call(sName, ...)
-    return ClassLib.Call(self, sName, ...)
+function BaseClass:Call(sEvent, ...)
+    return ClassLib.Call(self, sEvent, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Subscribes to an Event on the instance
----@param sName string @The name of the event to subscribe to
+---@param sEvent string @The name of the event to subscribe to
 ---@param callback function @The callback to call when the event is triggered
 ---@return function|nil @The callback
 ---
-function BaseClass:Subscribe(sName, callback)
-    return ClassLib.Subscribe(self, sName, callback)
+function BaseClass:Subscribe(sEvent, callback)
+    return ClassLib.Subscribe(self, sEvent, callback)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unsubscribes from all subscribed Events in this instance, optionally passing the function to unsubscribe only that callback
----@param sName string @The name of the event to unsubscribe from
+---@param sEvent string @The name of the event to unsubscribe from
 ---@param callback? function @The callback to unsubscribe
 ---
-function BaseClass:Unsubscribe(sName, callback)
-    return ClassLib.Unsubscribe(self, sName, callback)
+function BaseClass:Unsubscribe(sEvent, callback)
+    return ClassLib.Unsubscribe(self, sEvent, callback)
 end
 
 ------------------------------------------------------------------------------------------
 -- Networking
 ------------------------------------------------------------------------------------------
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Subscribes to a remote event
+---@param sEvent string @The name of the event to subscribe to
+---@param callback function @The callback to call when the event is triggered
+---@return function|nil @The callback
+---
+function BaseClass.SubscribeRemote(sEvent, callback)
+    return ClassLib.SubscribeRemote(BaseClass, sEvent, callback)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unsubscribes from a remote event
+---@param sEvent string @The name of the event to unsubscribe from
+---@param callback? function @The callback to unsubscribe
+---
+function BaseClass.UnsubscribeRemote(sEvent, callback)
+    return ClassLib.UnsubscribeRemote(BaseClass, sEvent, callback)
+end
+
+if Client then
+    ---`🔸 Client`<br>
+    ---Calls a remote event from the client to the server
+    ---@param sEvent string @The name of the event to call
+    ---@vararg any @The arguments to pass to the event
+    ---
+    function BaseClass:CallRemote(sEvent, ...)
+        return ClassLib.CallRemote_Client(self, sEvent, ...)
+    end
+
+elseif Server then
+    ---`🔹 Server`<br>
+    ---Calls a remote event from the server to the client
+    ---@param sEvent string @The name of the event to call
+    ---@param pPlayer Player @The player to which to send the event
+    ---@vararg any @The arguments to pass to the event
+    ---
+    function BaseClass:CallRemote(sEvent, pPlayer, ...)
+        ClassLib.CallRemote_Server(self, sEvent, pPlayer, ...)
+    end
+
+    ---`🔹 Server`<br>
+    ---Broadcast a remote event from the server to all clients
+    ---@param sEvent string @The name of the event to broadcast
+    ---@vararg any @The arguments to pass to the event
+    ---
+    function BaseClass:BroadcastRemote(sEvent, ...)
+        ClassLib.CallRemote_Server(self, sEvent, true, ...)
+    end
+end
 
 -- ---`🔸 Client`<br>`🔹 Server`<br>
 -- ---Returns the value of a key
@@ -225,7 +275,7 @@ end
 -- ---@param xFallback any @Fallback value
 -- ---@return any @Value
 -- ---
--- function BaseClass:GetNWValue(sKey, xFallback)
+-- function BaseClass:GetNWValue(sKey, xFallback)e
 --     return getmetatable(self).__nw_values[sKey]
 -- end
 
