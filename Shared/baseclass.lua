@@ -149,10 +149,11 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
+---@param bBroadcastCreation? boolean @Whether to broadcast the creation of a new instance of the class
 ---@return table @The new class
 ---
-function BaseClass.Inherit(sClassName)
-    return ClassLib.Inherit(BaseClass, sClassName)
+function BaseClass.Inherit(sClassName, bBroadcastCreation)
+    return ClassLib.Inherit(BaseClass, sClassName, bBroadcastCreation)
 end
 
 ------------------------------------------------------------------------------------------
@@ -267,6 +268,27 @@ elseif Server then
     function BaseClass:BroadcastRemote(sEvent, ...)
         ClassLib.CallRemote_Server(self, sEvent, true, ...)
     end
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets a key/value on the instance
+---@param sKey string @Key
+---@param xValue any @Value
+---@param bBroadcast boolean @Whether to broadcast the change to all clients (server only)
+---
+function BaseClass:SetValue(sKey, xValue, bBroadcast)
+    return ClassLib.SetValue(self, sKey, xValue, bBroadcast)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Gets a key/value from the instance
+---@param sKey string @Key
+---@param xFallback? any @Fallback value (if the key doesn't exist)
+---@return any @Value
+---@return boolean @Whether the key is broadcasted (server only)
+---
+function BaseClass:GetValue(sKey, xFallback)
+    return ClassLib.GetValue(self, sKey, xFallback)
 end
 
 -- ---`🔸 Client`<br>`🔹 Server`<br>
