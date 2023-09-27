@@ -5,7 +5,14 @@
 ]]--
 
 ClassLib = {}
-local tSerializedClasses = {}
+local tClassesMap = {}
+local tEventsMap = {
+	["ClassLib:Constructor"] = "_/0",
+	["ClassLib:Destructor"] = "_/1",
+	["ClassLib:SetValue"] = "_/2",
+	["ClassLib:CLToSV"] = "_/3",
+	["ClassLib:SVToCL"] = "_/4",
+}
 
 -- Cache some globals
 local type = type
@@ -132,7 +139,7 @@ end
 ---@return table|nil @The class
 ---
 function ClassLib.GetClassByName(sClassName)
-	return tSerializedClasses[sClassName]
+	return tClassesMap[sClassName]
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -244,11 +251,11 @@ if Client then
 		local sClass = ClassLib.GetClassName(oInput)
 		if not sClass then return end
 
-		Events.CallRemote("🍇", sClass, oInput:GetID(), sEvent, ...)
+		Events.CallRemote(tEventsMap["ClassLib:CLToSV"], sClass, oInput:GetID(), sEvent, ...)
 	end
 
-	Events.SubscribeRemote("🍇", function(sClassName, iID, sEvent, ...)
-		local tClass = tSerializedClasses[sClassName]
+	Events.SubscribeRemote(tEventsMap["ClassLib:SVToCL"], function(sClassName, iID, sEvent, ...)
+		local tClass = tClassesMap[sClassName]
 		if not tClass then return end
 
 		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
@@ -278,15 +285,15 @@ elseif Server then
 
 		if (getmetatable(xPlayer) ~= Player) then
 			if (xPlayer ~= true) then return end
-			Events.BroadcastRemote("🍇", sClass, oInput:GetID(), sEvent, ...)
+			Events.BroadcastRemote(tEventsMap["ClassLib:SVToCL"], sClass, oInput:GetID(), sEvent, ...)
 			return
 		end
 
-		Events.CallRemote("🍇", xPlayer, sClass, oInput:GetID(), sEvent, ...)
+		Events.CallRemote(tEventsMap["ClassLib:SVToCL"], xPlayer, sClass, oInput:GetID(), sEvent, ...)
 	end
 
-	Events.SubscribeRemote("🍇", function(pPlayer, sClassName, iID, sEvent, ...)
-		local tClass = tSerializedClasses[sClassName]
+	Events.SubscribeRemote(tEventsMap["ClassLib:CLToSV"], function(pPlayer, sClassName, iID, sEvent, ...)
+		local tClass = tClassesMap[sClassName]
 		if not tClass then return end
 
 		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
@@ -375,11 +382,12 @@ end
 ---Creates a new class that inherits from the passed class
 ---@param oInheritFrom table @The class to inherit from
 ---@param sClassName string @The name of the class
+---@param bBroadcastCreation boolean @Whether to broadcast the creation of a new instance of the class
 ---@return table @The new class
 ---
-function ClassLib.Inherit(oInheritFrom, sClassName)
+function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 	if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
-	if tSerializedClasses[sClassName] then error("[ClassLib] Attempt to create a class with a name that already exists") end
+	if tClassesMap[sClassName] then error("[ClassLib] Attempt to create a class with a name that already exists") end
 
 	assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
@@ -404,6 +412,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 		__remote_events = {},
 		__instances = {},
 		__next_id = 1,
+		__broadcast_creation = (bBroadcastCreation and true or false)
 	})
 
 	local tClassMT = getmetatable(oNewClass)
@@ -415,7 +424,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 	function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
-	function oNewClass.Inherit(sName) return ClassLib.Inherit(oNewClass, sName) end
+	function oNewClass.Inherit(sName, bBroadcastCreation) return ClassLib.Inherit(oNewClass, sName, bBroadcastCreation) end
 
 	-- Adds static functions related to local events to the new class
 	function oNewClass.ClassCall(sEvent, ...)
@@ -438,7 +447,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName)
 
 	-- function oNewClass.EmulateJS(oWebUI) return ClassLib.EmulateJS(oNewClass, oWebUI) end
 
-	tSerializedClasses[sClassName] = oNewClass
+	tClassesMap[sClassName] = oNewClass
 
 	return oNewClass
 end
@@ -469,7 +478,8 @@ function ClassLib.NewInstance(oClass, ...)
 
 		__classname = tClassMT.__classname,
 		__is_valid = true,
-		__events = {}
+		__events = {},
+		__broadcasted_values = {},
 	})
 
 	-- Add instance to the class instance table
@@ -484,6 +494,10 @@ function ClassLib.NewInstance(oClass, ...)
 	end
 
 	ClassLib.Call(oClass, "Spawn", oInstance)
+
+	if tClassMT.__broadcast_creation and Server then
+		ClassLib.SyncInstanceCreation(oInstance)
+	end
 
 	return oInstance
 end
@@ -518,6 +532,10 @@ function ClassLib.Destroy(oInstance, ...)
     end
 	tClassMT.__instances = tNewList
 
+	if tClassMT.__broadcast_creation and Server then
+		ClassLib.SyncInstanceDestroy(oInstance)
+	end
+
 	-- Prevent access to the instance
 	local tMT = getmetatable(oInstance)
 	tMT.__is_valid = nil
@@ -549,4 +567,127 @@ function ClassLib.Clone(oInstance)
 	end
 
 	return oClone
+end
+
+----------------------------------------------------------------------
+-- Sync
+----------------------------------------------------------------------
+
+function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
+	assert((type(oInstance) == "table"), "[ClassLib] The object passed to ClassLib.SetValue is not a table")
+	assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
+
+	if (type(xValue) == "function") then
+		Console.Warn("[ClassLib] Attempt to set a function as a value")
+		return
+	end
+
+	if (sKey == "id") then
+		Console.Warn("[ClassLib] Attempt to set the ID as a value")
+		return
+	end
+
+	local tMT = getmetatable(oInstance)
+	if not tMT then return end
+
+	oInstance[sKey] = xValue
+	ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue)
+
+	if not Server or not bBroadcast then return end
+
+	tMT.__broadcasted_values[sKey] = xValue
+
+	Events.BroadcastRemote(
+		tEventsMap["ClassLib:SetValue"],
+		oInstance:GetClassName(),
+		oInstance.id,
+		sKey,
+		xValue
+	)
+end
+
+function ClassLib.GetValue(oInstance, sKey, xFallback)
+	local tMT = getmetatable(oInstance)
+	if not tMT then return xFallback, false end
+
+	return (oInstance[sKey] ~= nil) and oInstance[sKey] or xFallback, (tMT.__broadcasted_values[sKey] ~= nil)
+end
+
+if Server then
+	function ClassLib.SyncInstanceDestroy(oInstance)
+		Events.BroadcastRemote(
+			tEventsMap["ClassLib:Destructor"],
+			oInstance:GetClassName(),
+			oInstance.id
+		)
+	end
+
+	function ClassLib.SyncInstanceCreation(oInstance, pPlayer)
+		if pPlayer then
+			Events.CallRemote(
+				tEventsMap["ClassLib:Constructor"],
+				pPlayer,
+				oInstance:GetClassName(),
+				oInstance.id,
+				getmetatable(oInstance).__broadcasted_values
+			)
+			return
+		end
+
+		Events.BroadcastRemote(
+			tEventsMap["ClassLib:Constructor"],
+			oInstance:GetClassName(),
+			oInstance.id,
+			getmetatable(oInstance).__broadcasted_values
+		)
+	end
+
+	local function onPlayerReady(pPlayer)
+		for sClass, oClass in pairs(tClassesMap) do
+			local tClassMT = getmetatable(oClass)
+			if not tClassMT.__broadcast_creation then goto continue end
+			if (#tClassMT.__instances == 0) then goto continue end
+
+			for _, oInstance in ipairs(tClassMT.__instances) do
+				ClassLib.SyncInstanceCreation(oInstance, pPlayer)
+			end
+
+			::continue::
+		end
+	end
+
+	Player.Subscribe("Ready", onPlayerReady)
+end
+
+if Client then
+	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, nID, tSyncValues)
+		local tClass = ClassLib.GetClassByName(sClassName)
+		if not tClass then return end
+
+		local oInstance = tClass(tClass)
+		oInstance.id = nID
+
+        getmetatable(tClass).__instances[nID] = oInstance
+
+		for sKey, xValue in pairs(tSyncValues) do
+			ClassLib.SetValue(oInstance, sKey, xValue)
+		end
+	end)
+
+	Events.SubscribeRemote(tEventsMap["ClassLib:Destructor"], function(sClassName, nID)
+		local tClass = ClassLib.GetClassByName(sClassName)
+		if not tClass then return end
+
+		ClassLib.Destroy(tClass.GetByID(nID))
+	end)
+
+	Events.SubscribeRemote(tEventsMap["ClassLib:SetValue"], function(sClassName, nID, sKey, xValue)
+		local tClass = ClassLib.GetClassByName(sClassName)
+		if not tClass then return end
+
+		local oInstance = tClass.GetByID(nID)
+		if not oInstance then return end
+
+		ClassLib.SetValue(oInstance, sKey, xValue)
+	end)
 end
