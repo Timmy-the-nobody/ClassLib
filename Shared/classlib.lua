@@ -496,7 +496,7 @@ function ClassLib.NewInstance(oClass, ...)
 	ClassLib.Call(oClass, "Spawn", oInstance)
 
 	if tClassMT.__broadcast_creation and Server then
-		ClassLib.SyncInstanceCreation(oInstance)
+		ClassLib.SyncInstanceConstruct(oInstance)
 	end
 
 	return oInstance
@@ -573,19 +573,19 @@ end
 -- Sync
 ----------------------------------------------------------------------
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets a value on an instance
+---@param oInstance table @The instance to set the value on
+---@param sKey string @The key to set the value on
+---@param xValue any @The value to set
+---@param bBroadcast? boolean @Whether to broadcast the value change (server only)
+---@return boolean|nil @Return true if the value was set, nil otherwise
+---
 function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 	assert((type(oInstance) == "table"), "[ClassLib] The object passed to ClassLib.SetValue is not a table")
 	assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
-
-	if (type(xValue) == "function") then
-		Console.Warn("[ClassLib] Attempt to set a function as a value")
-		return
-	end
-
-	if (sKey == "id") then
-		Console.Warn("[ClassLib] Attempt to set the ID as a value")
-		return
-	end
+	assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
+	assert((sKey ~= "id"), "[ClassLib] Attempt to set the ID as a value")
 
 	local tMT = getmetatable(oInstance)
 	if not tMT then return end
@@ -593,7 +593,9 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 	oInstance[sKey] = xValue
 	ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue)
 
-	if not Server or not bBroadcast then return end
+	if not Server or not bBroadcast then
+		return true
+	end
 
 	tMT.__broadcasted_values[sKey] = xValue
 
@@ -604,8 +606,18 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 		sKey,
 		xValue
 	)
+
+	return true
 end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Gets a value from an instance
+---@param oInstance table @The instance to get the value from
+---@param sKey string @The key to get the value from
+---@param xFallback? any @Fallback value (if the instance or the key doesn't exist)
+---@return any @Value
+---@return boolean @Whether the key is broadcasted (server only)
+---
 function ClassLib.GetValue(oInstance, sKey, xFallback)
 	local tMT = getmetatable(oInstance)
 	if not tMT then return xFallback, false end
@@ -614,16 +626,13 @@ function ClassLib.GetValue(oInstance, sKey, xFallback)
 end
 
 if Server then
-	function ClassLib.SyncInstanceDestroy(oInstance)
-		Events.BroadcastRemote(
-			tEventsMap["ClassLib:Destructor"],
-			oInstance:GetClassName(),
-			oInstance.id
-		)
-	end
-
-	function ClassLib.SyncInstanceCreation(oInstance, pPlayer)
-		if pPlayer then
+	---`🔹 Server`<br>
+	---Internal function to sync the creation of an instance, you shouldn't call this directly
+	---@param oInstance table @The instance to sync
+	---@param pPlayer Player|nil @The player that created the instance, nil to broadcast to all players
+	---
+	function ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
+		if (getmetatable(pPlayer) == Player) then
 			Events.CallRemote(
 				tEventsMap["ClassLib:Constructor"],
 				pPlayer,
@@ -642,6 +651,18 @@ if Server then
 		)
 	end
 
+	---`🔹 Server`<br>
+	---Internal function to sync the destruction of an instance, you shouldn't call this directly
+	---@param oInstance table @The instance to sync
+	---
+	function ClassLib.SyncInstanceDestroy(oInstance)
+		Events.BroadcastRemote(
+			tEventsMap["ClassLib:Destructor"],
+			oInstance:GetClassName(),
+			oInstance.id
+		)
+	end
+
 	local function onPlayerReady(pPlayer)
 		for sClass, oClass in pairs(tClassesMap) do
 			local tClassMT = getmetatable(oClass)
@@ -649,7 +670,7 @@ if Server then
 			if (#tClassMT.__instances == 0) then goto continue end
 
 			for _, oInstance in ipairs(tClassMT.__instances) do
-				ClassLib.SyncInstanceCreation(oInstance, pPlayer)
+				ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
 			end
 
 			::continue::
@@ -660,6 +681,7 @@ if Server then
 end
 
 if Client then
+	-- Net Event: "ClassLib:Constructor"
 	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, nID, tSyncValues)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
@@ -674,6 +696,7 @@ if Client then
 		end
 	end)
 
+	-- Net Event: "ClassLib:Destructor"
 	Events.SubscribeRemote(tEventsMap["ClassLib:Destructor"], function(sClassName, nID)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
@@ -681,6 +704,7 @@ if Client then
 		ClassLib.Destroy(tClass.GetByID(nID))
 	end)
 
+	-- Net Event: "ClassLib:SetValue"
 	Events.SubscribeRemote(tEventsMap["ClassLib:SetValue"], function(sClassName, nID, sKey, xValue)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
