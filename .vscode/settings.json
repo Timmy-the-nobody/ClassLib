@@ -5,6 +5,8 @@
         "Package"
     ],
     "Lua.diagnostics.disable": [
-        "unused-local"
+        "unused-local",
+        "missing-parameter",
+        "param-type-mismatch"
     ]
 }

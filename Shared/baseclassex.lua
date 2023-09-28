@@ -13,7 +13,7 @@ BaseClassEx = BaseClass.Inherit("BaseClassEx")
 ---@return string @Instance label
 ---
 function BaseClassEx:GetLabel()
-    return self.label
+    return self.label or ""
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -30,7 +30,7 @@ end
 ---@return string|nil @The description of the instance
 ---
 function BaseClassEx:GetDescription()
-    return self.description
+    return self.description or ""
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
