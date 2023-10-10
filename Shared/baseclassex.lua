@@ -4,7 +4,6 @@ local type = type
 ---`BaseClassEx` is a class that represents an extended base class.<br>
 ---It inherits from `BaseClass` and adds some useful functions to it.
 ---@class BaseClassEx : BaseClass
----@overload fun(): BaseClassEx
 ---
 BaseClassEx = BaseClass.Inherit("BaseClassEx")
 

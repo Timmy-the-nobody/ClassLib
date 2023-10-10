@@ -220,7 +220,7 @@ function ClassLib.Unsubscribe(oInput, sEvent, callback)
 	local tEvents = getmetatable(oInput).__events
 	if not tEvents[sEvent] then return end
 
-	if type(callback) ~= "function" then
+	if (type(callback) ~= "function") then
 		tEvents[sEvent] = nil
 		return
 	end
@@ -550,20 +550,28 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Clones an instance, and return a new instance with the same values (except it's ID)
 ---@param oInstance table @The instance to clone
+---@param tIgnoredKeys? table @The properties to ignore (sequential table)
 ---@return table @The new instance
 ---
-function ClassLib.Clone(oInstance)
+function ClassLib.Clone(oInstance, tIgnoredKeys)
 	assert((type(oInstance) == "table"), "[ClassLib] The object passed to ClassLib.Clone is not a table")
 
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] The object passed to ClassLib.Clone has no valid class")
 
 	local oClone = ClassLib.NewInstance(oClass)
+	local bCheckIgnoredKeys = (type(tIgnoredKeys) == "table")
 
 	for sKey, xVal in pairs(oInstance) do
-		if (sKey ~= "id") then
-			oClone[sKey] = xVal
+		if (sKey == "id") then goto continue end
+		if bCheckIgnoredKeys then
+			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
+				if (sKey == sIgnoredKey) then goto continue end
+			end
 		end
+
+		oClone[sKey] = xVal
+		::continue::
 	end
 
 	return oClone

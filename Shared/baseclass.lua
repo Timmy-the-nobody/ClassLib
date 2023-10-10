@@ -78,10 +78,11 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Clones the instance, and return a new instance with the same values (except it's ID)
+---@param tIgnoredKeys? table @The properties to ignore (sequential table)
 ---@return table @The new instance
 ---
-function BaseClass:Clone()
-    return ClassLib.Clone(self)
+function BaseClass:Clone(tIgnoredKeys)
+    return ClassLib.Clone(self, tIgnoredKeys)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -290,32 +291,3 @@ end
 function BaseClass:GetValue(sKey, xFallback)
     return ClassLib.GetValue(self, sKey, xFallback)
 end
-
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Returns the value of a key
--- ---@param sKey string @Key
--- ---@param xFallback any @Fallback value
--- ---@return any @Value
--- ---
--- function BaseClass:GetNWValue(sKey, xFallback)e
---     return getmetatable(self).__nw_values[sKey]
--- end
-
--- ---`🔸 Client`<br>`🔹 Server`<br>
--- ---Sets the value of a key
--- ---@param sKey string @Key
--- ---@param xValue any @Value
--- ---
--- function BaseClass:SetNWValue(sKey, xValue)
---     if (sKey == nil) then return end
-
---     getmetatable(self).__nw_values[sKey] = xValue
-
---     if Server then
---         local sClassName = self:GetClassName()
---         if not sClassName then return end
-
---         Events.BroadcastRemote("CLib:SetKV", self:GetClassName(), self:GetID(), sKey, xValue)
---     end
--- end
-
