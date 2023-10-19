@@ -629,8 +629,9 @@ end
 function ClassLib.GetValue(oInstance, sKey, xFallback)
 	local tMT = getmetatable(oInstance)
 	if not tMT then return xFallback, false end
+	if (oInstance[sKey] == nil) then return xFallback, false end
 
-	return (oInstance[sKey] ~= nil) and oInstance[sKey] or xFallback, (tMT.__broadcasted_values[sKey] ~= nil)
+	return oInstance[sKey], (tMT.__broadcasted_values[sKey] ~= nil)
 end
 
 if Server then
