@@ -286,8 +286,18 @@ end
 ---@param sKey string @Key
 ---@param xFallback? any @Fallback value (if the key doesn't exist)
 ---@return any @Value
----@return boolean @Whether the key is broadcasted (server only)
 ---
 function BaseClass:GetValue(sKey, xFallback)
     return ClassLib.GetValue(self, sKey, xFallback)
+end
+
+if Server then
+    ---`🔹 Server`<br>
+    ---Checks if a key is broadcasted
+    ---@param sKey string @Key
+    ---@return boolean @Whether the key is broadcasted
+    ---
+    function BaseClass:IsValueBroadcasted(sKey)
+        return ClassLib.IsValueBroadcasted(self, sKey)
+    end
 end

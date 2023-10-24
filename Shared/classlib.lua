@@ -624,17 +624,28 @@ end
 ---@param sKey string @The key to get the value from
 ---@param xFallback? any @Fallback value (if the instance or the key doesn't exist)
 ---@return any @Value
----@return boolean @Whether the key is broadcasted (server only)
 ---
 function ClassLib.GetValue(oInstance, sKey, xFallback)
 	local tMT = getmetatable(oInstance)
-	if not tMT then return xFallback, false end
-	if (oInstance[sKey] == nil) then return xFallback, false end
+	if not tMT then return xFallback end
+	if (oInstance[sKey] == nil) then return xFallback end
 
-	return oInstance[sKey], (tMT.__broadcasted_values[sKey] ~= nil)
+	return oInstance[sKey]
 end
 
 if Server then
+	---`🔹 Server`<br>
+	---Checks if a key is broadcasted
+	---@param oInstance table @The instance to check
+	---@param sKey string @The key to check
+	---@return boolean @Whether the key is broadcasted
+	---
+	function ClassLib.IsValueBroadcasted(oInstance, sKey)
+		local tMT = getmetatable(oInstance)
+		if not tMT then return false end
+		return tMT.__broadcasted_values[sKey] ~= nil
+	end
+
 	---`🔹 Server`<br>
 	---Internal function to sync the creation of an instance, you shouldn't call this directly
 	---@param oInstance table @The instance to sync
