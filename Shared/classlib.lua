@@ -7,11 +7,11 @@
 ClassLib = {}
 local tClassesMap = {}
 local tEventsMap = {
-	["ClassLib:Constructor"] = "_/0",
-	["ClassLib:Destructor"] = "_/1",
-	["ClassLib:SetValue"] = "_/2",
-	["ClassLib:CLToSV"] = "_/3",
-	["ClassLib:SVToCL"] = "_/4",
+	["ClassLib:Constructor"] = "_::0",
+	["ClassLib:Destructor"] = "_::1",
+	["ClassLib:SetValue"] = "_::2",
+	["ClassLib:CLToSV"] = "_::3",
+	["ClassLib:SVToCL"] = "_::4",
 }
 
 -- Cache some globals
@@ -70,17 +70,9 @@ end
 ---@return boolean @Whether the value is an object from the class
 ---
 function ClassLib.IsA(xVal, oClass, bRecursive)
-	if (type(xVal) ~= "table") then
-		return false
-	end
-
-	if (ClassLib.GetClass(xVal) == oClass) then
-		return true
-	end
-
-	if not bRecursive then
-		return false
-	end
+	if (type(xVal) ~= "table") then return false end
+	if (ClassLib.GetClass(xVal) == oClass) then return true end
+	if not bRecursive then return false end
 
 	for _, oSuper in ipairs(ClassLib.SuperAll(xVal)) do
 		if (oSuper == oClass) then
@@ -97,14 +89,10 @@ end
 ---@return boolean @True if the instance is valid, false otherwise
 ---
 function ClassLib.IsValid(oInstance)
-	if (type(oInstance) ~= "table") then
-		return false
-	end
+	if (type(oInstance) ~= "table") then return false end
 
 	local oClass = ClassLib.GetClass(oInstance)
-	if (type(oClass) ~= "table") then
-		return false
-	end
+	if (type(oClass) ~= "table") then return false end
 
 	local tMT = getmetatable(oInstance)
 	return (tMT.__is_valid ~= nil)
@@ -177,11 +165,11 @@ function ClassLib.Call(oInput, sEvent, ...)
 	local tMT = getmetatable(oInput)
 	local tEvents = tMT.__events
 
-	if not tEvents or not tEvents[sEvent] then return end
-
-	for _, callback in ipairs(tEvents[sEvent]) do
-		if (callback(...) == false) then
-			ClassLib.Unsubscribe(oInput, sEvent, callback)
+	if tEvents and tEvents[sEvent] then
+		for _, callback in ipairs(tEvents[sEvent]) do
+			if (callback(...) == false) then
+				ClassLib.Unsubscribe(oInput, sEvent, callback)
+			end
 		end
 	end
 
@@ -391,6 +379,8 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 
 	assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
+	bBroadcastCreation = (bBroadcastCreation and true or false)
+
 	local tFromMT = getmetatable(oInheritFrom)
 	local oNewClass = setmetatable({}, {
 		__index = oInheritFrom,
@@ -412,7 +402,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 		__remote_events = {},
 		__instances = {},
 		__next_id = 1,
-		__broadcast_creation = (bBroadcastCreation and true or false)
+		__broadcast_creation = bBroadcastCreation
 	})
 
 	local tClassMT = getmetatable(oNewClass)
@@ -424,7 +414,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 	function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
-	function oNewClass.Inherit(sName, bBroadcastCreation) return ClassLib.Inherit(oNewClass, sName, bBroadcastCreation) end
+	function oNewClass.Inherit(sName, bBroadcast) return ClassLib.Inherit(oNewClass, sName, bBroadcastCreation) end
 
 	-- Adds static functions related to local events to the new class
 	function oNewClass.ClassCall(sEvent, ...)
@@ -446,6 +436,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 	end
 
 	-- function oNewClass.EmulateJS(oWebUI) return ClassLib.EmulateJS(oNewClass, oWebUI) end
+	-- oInheritFrom.ClassCall("Inherit", oInheritFrom, oNewClass)
 
 	tClassesMap[sClassName] = oNewClass
 
@@ -522,6 +513,8 @@ function ClassLib.Destroy(oInstance, ...)
 		if (bShouldDestroy == false) then return end
 	end
 
+	ClassLib.Call(oClass, "Destroy", oInstance)
+
 	-- Clears the instance from it's class instance table
 	local tClassMT = getmetatable(oClass)
 	local tNewList = {}
@@ -543,8 +536,6 @@ function ClassLib.Destroy(oInstance, ...)
 	-- function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
 	-- function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
 	function tMT:__newindex() error("[ClassLib] Attempt to set a value on a destroyed object") end
-
-	ClassLib.Call(oClass, "Destroy", oInstance)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
