@@ -8,6 +8,16 @@ local type = type
 BaseClassEx = BaseClass.Inherit("BaseClassEx")
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Creates a new class that inherits from this class
+---@param sClassName string @The name of the new class
+---@param bBroadcastCreation? boolean @Whether to broadcast the creation of a new instance of the class
+---@return table @The new class
+---
+function BaseClassEx.Inherit(sClassName, bBroadcastCreation)
+    return ClassLib.Inherit(BaseClassEx, sClassName, bBroadcastCreation)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the label of the instance
 ---@return string @Instance label
 ---
