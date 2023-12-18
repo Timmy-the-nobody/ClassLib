@@ -262,7 +262,7 @@ elseif Server then
 	---Calls a remote event from the server to the client
 	---@param oInput table @The object to call the event on
 	---@param sEvent string @The name of the event to call
-	---@param xPlayer Player|boolean @The player to send the event to, or true to send to all players
+	---@param xPlayer Player|table<number, Player> @The player (or table of players) to send the event to
 	---@vararg any @The arguments to pass to the event
 	---
 	function ClassLib.CallRemote_Server(oInput, sEvent, xPlayer, ...)
@@ -271,13 +271,27 @@ elseif Server then
 		local sClass = ClassLib.GetClassName(oInput)
 		if not sClass then return end
 
-		if (getmetatable(xPlayer) ~= Player) then
-			if (xPlayer ~= true) then return end
-			Events.BroadcastRemote(tEventsMap["ClassLib:SVToCL"], sClass, oInput:GetID(), sEvent, ...)
+		if (getmetatable(xPlayer) == Player) then
+			Events.CallRemote(tEventsMap["ClassLib:SVToCL"], xPlayer, sClass, oInput:GetID(), sEvent, ...)
 			return
 		end
 
-		Events.CallRemote(tEventsMap["ClassLib:SVToCL"], xPlayer, sClass, oInput:GetID(), sEvent, ...)
+		if (type(xPlayer) ~= "table") then return end
+
+		for _, pPlayer in ipairs(xPlayer) do
+			if (getmetatable(pPlayer) == Player) then
+				Events.CallRemote(tEventsMap["ClassLib:SVToCL"], pPlayer, sClass, oInput:GetID(), sEvent, ...)
+			end
+		end
+	end
+
+	function ClassLib.BroadcastRemote(oInput, sEvent, ...)
+		if (type(sEvent) ~= "string") then return end
+
+		local sClass = ClassLib.GetClassName(oInput)
+		if not sClass then return end
+
+		Events.BroadcastRemote(tEventsMap["ClassLib:SVToCL"], sClass, oInput:GetID(), sEvent, ...)
 	end
 
 	Events.SubscribeRemote(tEventsMap["ClassLib:CLToSV"], function(pPlayer, sClassName, iID, sEvent, ...)

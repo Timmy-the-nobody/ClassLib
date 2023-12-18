@@ -254,11 +254,11 @@ elseif Server then
     ---`🔹 Server`<br>
     ---Calls a remote event from the server to the client
     ---@param sEvent string @The name of the event to call
-    ---@param pPlayer Player @The player to which to send the event
+    ---@param xPlayer Player|table<number, Player> @The player (or table of players) to which to send the event
     ---@vararg any @The arguments to pass to the event
     ---
-    function BaseClass:CallRemote(sEvent, pPlayer, ...)
-        ClassLib.CallRemote_Server(self, sEvent, pPlayer, ...)
+    function BaseClass:CallRemote(sEvent, xPlayer, ...)
+        ClassLib.CallRemote_Server(self, sEvent, xPlayer, ...)
     end
 
     ---`🔹 Server`<br>
@@ -267,7 +267,7 @@ elseif Server then
     ---@vararg any @The arguments to pass to the event
     ---
     function BaseClass:BroadcastRemote(sEvent, ...)
-        ClassLib.CallRemote_Server(self, sEvent, true, ...)
+        ClassLib.BroadcastRemote(self, sEvent, ...)
     end
 end
 
