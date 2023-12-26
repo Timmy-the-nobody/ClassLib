@@ -94,6 +94,14 @@ function BaseClass:IsValid()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if the instance is being destroyed
+---@return boolean @Whether the instance is being destroyed
+---
+function BaseClass:IsBeingDestroyed()
+    return ClassLib.IsBeingDestroyed(self)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class name of the instance
 ---@return string|nil @The class name
 ---
