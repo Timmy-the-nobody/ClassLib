@@ -99,6 +99,21 @@ function ClassLib.IsValid(oInstance)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if the passed object is being destroyed
+---@param oInstance table @The instance to check
+---@return boolean @True if the instance is being destroyed, false otherwise
+---
+function ClassLib.IsBeingDestroyed(oInstance)
+	if (type(oInstance) ~= "table") then return false end
+
+	local oClass = ClassLib.GetClass(oInstance)
+	if (type(oClass) ~= "table") then return false end
+
+	local tMT = getmetatable(oInstance)
+	return (tMT.__is_being_destroyed ~= nil)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class of an object
 ---@param oInstance table @The object
 ---@return table|nil @The class
@@ -521,11 +536,13 @@ function ClassLib.Destroy(oInstance, ...)
 
 	-- Call class destructor
 	if rawget(oClass, "Destructor") then
-		local bShouldDestroy = rawget(oClass, "Destructor")(oInstance, ...)
-
 		-- If the destructor returns false, don't destroy the instance
+		local bShouldDestroy = rawget(oClass, "Destructor")(oInstance, ...)
 		if (bShouldDestroy == false) then return end
 	end
+
+	local tMT = getmetatable(oInstance)
+	tMT.__is_being_destroyed = true
 
 	ClassLib.Call(oClass, "Destroy", oInstance)
 
@@ -544,8 +561,8 @@ function ClassLib.Destroy(oInstance, ...)
 	end
 
 	-- Prevent access to the instance
-	local tMT = getmetatable(oInstance)
 	tMT.__is_valid = nil
+	tMT.__is_being_destroyed = nil
 
 	-- function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
 	-- function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
