@@ -187,13 +187,6 @@ function ClassLib.Call(oInput, sEvent, ...)
 			end
 		end
 	end
-
-	-- If the object is a class, call the event on all instances of it's instances
-	if tMT.__instances then
-		for _, oInstance in ipairs(tMT.__instances) do
-			ClassLib.Call(oInstance, sEvent, ...)
-		end
-	end
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -234,6 +227,7 @@ function ClassLib.Unsubscribe(oInput, sEvent, callback)
 			tNew[#tNew + 1] = v
 		end
 	end
+
 	tEvents[sEvent] = tNew
 end
 
@@ -371,26 +365,6 @@ function ClassLib.UnsubscribeRemote(oInput, sEvent, callback)
 	tRemoteEvents[sEvent] = tNewCallbacks
 end
 
--- function ClassLib.EmulateJS(oClass, oWebUI)
--- 	local tClassMT = getmetatable(oClass)
--- 	if not tClassMT then return end
-
--- 	if (getmetatable(oWebUI) ~= WebUI) then return end
-
--- 	tClassMT.__emulated_webuis = tClassMT.__emulated_webuis or {}
--- 	tClassMT.__emulated_webuis[#tClassMT.__emulated_webuis + 1] = oWebUI
--- 	oWebUI:ExecuteJavaScript([[
--- 		console.log("Hello from Lua!")
--- 	]])
--- 	oClass.ClassSubscribe("Spawn", function(self)
--- 		if not self.GetLabel then return end
--- 		print("spawn")
--- 		oWebUI:ExecuteJavaScript([[
--- 			console.log("Hello from Lua!")
--- 		]])
--- 	end)
--- end
-
 ------------------------------------------------------------------------------------------
 -- ClassLib
 ------------------------------------------------------------------------------------------
@@ -404,7 +378,10 @@ end
 ---
 function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 	if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
-	if tClassesMap[sClassName] then error("[ClassLib] Attempt to create a class with a name that already exists") end
+	if tClassesMap[sClassName] then
+		Console.Warn("[ClassLib] Attempt to create a class with a name that already exists")
+		return tClassesMap[sClassName]
+	end
 
 	assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
@@ -446,28 +423,17 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 	function oNewClass.Inherit(sName, bBroadcast) return ClassLib.Inherit(oNewClass, sName, bBroadcastCreation) end
 
 	-- Adds static functions related to local events to the new class
-	function oNewClass.ClassCall(sEvent, ...)
-		return ClassLib.Call(oNewClass, sEvent, ...)
-	end
-	function oNewClass.ClassSubscribe(sEvent, callback)
-		return ClassLib.Subscribe(oNewClass, sEvent, callback)
-	end
-	function oNewClass.ClassUnsubscribe(sEvent, callback)
-		return ClassLib.Unsubscribe(oNewClass, sEvent, callback)
-	end
+	function oNewClass.ClassCall(sEvent, ...) return ClassLib.Call(oNewClass, sEvent, ...) end
+	function oNewClass.ClassSubscribe(sEvent, callback) return ClassLib.Subscribe(oNewClass, sEvent, callback) end
+	function oNewClass.ClassUnsubscribe(sEvent, callback) return ClassLib.Unsubscribe(oNewClass, sEvent, callback) end
 
 	-- Adds static functions related to remote events to the new class
-	function oNewClass.SubscribeRemote(sEvent, callback)
-		return ClassLib.SubscribeRemote(oNewClass, sEvent, callback)
-	end
-	function oNewClass.UnsubscribeRemote(sEvent, callback)
-		return ClassLib.UnsubscribeRemote(oNewClass, sEvent, callback)
-	end
-
-	-- function oNewClass.EmulateJS(oWebUI) return ClassLib.EmulateJS(oNewClass, oWebUI) end
-	-- oInheritFrom.ClassCall("Inherit", oInheritFrom, oNewClass)
+	function oNewClass.SubscribeRemote(sEvent, callback) return ClassLib.SubscribeRemote(oNewClass, sEvent, callback) end
+	function oNewClass.UnsubscribeRemote(sEvent, callback) return ClassLib.UnsubscribeRemote(oNewClass, sEvent, callback) end
 
 	tClassesMap[sClassName] = oNewClass
+
+	ClassLib.Call(oInheritFrom, "ClassRegister", oNewClass)
 
 	return oNewClass
 end
@@ -545,6 +511,7 @@ function ClassLib.Destroy(oInstance, ...)
 	tMT.__is_being_destroyed = true
 
 	ClassLib.Call(oClass, "Destroy", oInstance)
+	ClassLib.Call(oInstance, "Destroy", oInstance)
 
 	-- Clears the instance from it's class instance table
 	local tClassMT = getmetatable(oClass)
@@ -621,7 +588,9 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 	if not tMT then return end
 
 	oInstance[sKey] = xValue
+
 	ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue)
+	ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue)
 
 	if not Server or not bBroadcast then
 		return true
