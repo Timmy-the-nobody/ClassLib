@@ -3,10 +3,6 @@
 ### ClassLib is a powerful Lua Object-Oriented Programming (OOP) library designed with a specific focus on emulating the behavior of nanos world's class library.
 Whether you are an experienced nanos world scripter or new to Lua OOP, ClassLib provides a familiar environment to streamline your scripting experience.
 
-The library stands as a robust and feature-rich OOP framework tailored for nanos world.
-
-The primary objective is to offer a seamless transition for scripters accustomed to nanos world's scripting API, ensuring a smooth and painless integration into their workflow.
-
 ## 📘 Docs
 [https://timmy.gitbook.io/classlib-1/](https://timmy.gitbook.io/classlib-1/)
 
