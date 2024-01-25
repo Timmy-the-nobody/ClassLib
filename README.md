@@ -4,8 +4,6 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/Timmy-the-nobody/ClassLib)
 ![GitHub License](https://img.shields.io/github/license/Timmy-the-nobody/ClassLib)
 
-# 📦 ClassLib
-
 <b>ClassLib</b> is a powerful Lua Object-Oriented Programming (OOP) library designed with a specific focus on emulating the behavior of nanos world's class library.
 
 Whether you are an experienced nanos world scripter or new to Lua OOP, <b>ClassLib</b> provides a familiar environment to streamline your scripting experience.
