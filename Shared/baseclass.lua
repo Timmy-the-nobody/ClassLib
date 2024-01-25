@@ -1,3 +1,9 @@
+--[[
+    ClassLib
+    GNU General Public License v3.0
+    Copyright © Timmy-the-nobody, 2023, https://github.com/Timmy-the-nobody
+]]--
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Base class for all classes
 ---@class BaseClass
@@ -95,7 +101,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if the instance is from a passed class, or from a class that inherits from the passed class
----@param oClass table @The class to check against
+---@param oClass table @The class to check
 ---@param bRecursive boolean @Whether to check recursively
 ---@return boolean @Whether the value is an object from the class
 ---
