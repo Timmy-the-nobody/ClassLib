@@ -1,8 +1,8 @@
 ![classlib_logo_rectangle](https://github.com/Timmy-the-nobody/ClassLib/assets/51171246/e0c93725-f301-4c81-96c3-1d28ba13702a)
 
 [![GitHub release](https://img.shields.io/github/release/Timmy-the-nobody/ClassLib.svg)](https://GitHub.com/Timmy-the-nobody/ClassLib/releases/)
-![GitHub Repo stars](https://img.shields.io/github/stars/Timmy-the-nobody/ClassLib)
-![GitHub License](https://img.shields.io/github/license/Timmy-the-nobody/ClassLib)
+[![GitHub Repo stars](https://img.shields.io/github/stars/Timmy-the-nobody/ClassLib)](https://github.com/Timmy-the-nobody/ClassLib/stargazers)
+[![GitHub License](https://img.shields.io/github/license/Timmy-the-nobody/ClassLib)](https://github.com/Timmy-the-nobody/ClassLib?tab=GPL-3.0-1-ov-file#readme)
 
 <b>ClassLib</b> is a powerful Lua Object-Oriented Programming (OOP) library designed with a specific focus on emulating the behavior of nanos world's class library.
 
