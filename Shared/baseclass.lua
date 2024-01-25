@@ -17,7 +17,7 @@ setmetatable(BaseClass, {
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new instance of the class
----@param ... any @Arguments to pass to the constructor
+---@param ... any? @Arguments to pass to the constructor
 ---@return table @The new instance
 ---
 function BaseClass:NewInstance(...)
@@ -26,7 +26,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Destroys the instance
----@param ... any @Arguments to pass to the destructor
+---@param ... any? @Arguments to pass to the destructor
 ---
 function BaseClass:Destroy(...)
 	return ClassLib.Destroy(self, ...)
@@ -115,7 +115,7 @@ end
 ------------------------------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Gets all instances of the class
+---Returns all instances of this class
 ---@return table<integer, table> @Table of all instances of the class
 ---
 function BaseClass.GetAll()
@@ -123,15 +123,15 @@ function BaseClass.GetAll()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Gets the number of instances of the class
----@return integer @The number of instances
+---Returns how many instances of this class exists
+---@return integer @Amount of instance of the class
 ---
 function BaseClass.GetCount()
     return 0
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Gets an instance of this class by its unique ID
+---Returns an instance of this class from the instance unique ID
 ---@param iID integer @The ID of the instance
 ---@return table|nil @The instance, or nil if it doesn't exist
 ---
@@ -158,19 +158,19 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
----@param bBroadcastCreation? boolean @Whether to broadcast the creation of a new instance of the class
+---@param bSync? boolean @Whether to sync the creation/destruction of an instance of the class and it's broadcasted values to all players
 ---@return table @The new class
 ---
-function BaseClass.Inherit(sClassName, bBroadcastCreation)
-    return ClassLib.Inherit(BaseClass, sClassName, bBroadcastCreation)
+function BaseClass.Inherit(sClassName, bSync)
+    return ClassLib.Inherit(BaseClass, sClassName, bSync)
 end
 
 ------------------------------------------------------------------------------------------
--- Events methods
+-- Events
 ------------------------------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Calls an Event
+---Calls an Event on the Class
 ---@param sEvent string @The name of the event to call
 ---@vararg any @The arguments to pass to the event
 ---
@@ -179,8 +179,8 @@ function BaseClass.ClassCall(sEvent, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Subscribes to an Event
----@param sEvent string @The name of the event to subscribe to
+---Subscribes to an Event on the Class
+---@param sEvent string @The name of the event to listen to
 ---@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
 ---@return function|nil @The callback
 ---
@@ -189,7 +189,7 @@ function BaseClass.ClassSubscribe(sEvent, callback)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Unsubscribes from all subscribed Events in this Class, optionally passing the function to unsubscribe only that callback
+---Unsubscribes from all subscribed Events on this Class, optionally passing the function to unsubscribe only that callback
 ---@param sEvent string @The name of the event to unsubscribe from
 ---@param callback? function @The callback to unsubscribe
 ---
