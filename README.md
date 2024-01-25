@@ -14,10 +14,18 @@ Your PRs are welcome!
 <br> However, in order to keep a clean code base, please follow the coding conventions that are applied in this resource
 
 ## 📑 Key Features
-
 - Lua OOP Framework
   - ClassLib is built upon Lua's Object-Oriented Programming paradigm, providing a structured and efficient way to organize code.
 - Nanos World Compatibility
   - Developed specifically for nanos world, ClassLib minimizes dependencies on the game, ensuring optimal compatibility. The library is crafted to seamlessly integrate into nanos world's scripting environment.
 - Portability
   - While ClassLib is tailored for nanos world, it boasts a high degree of portability. With 95% of the library written in pure Lua, it can be easily adapted to other projects and platforms as needed.
+
+## Credits
+The inception of ClassLib owes credit to [MegaThorx](https://github.com/MegaThorx) and their EGUI package, serving as the foundation for the initial version.
+
+Over time, it has evolved significantly, but the gratitude towards MegaThorx remains for inspiring the library's development.
+
+Special thanks go to [Mouloud](https://github.com/MouloudP) and [Aerox](https://github.com/aeroxfr) for their invaluable contributions in testing and providing feedback during the early stages of the library.
+
+Their input has played a crucial role in refining and enhancing the library.
