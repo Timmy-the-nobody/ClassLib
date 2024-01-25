@@ -7,6 +7,7 @@
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Base class for all classes
 ---@class BaseClass
+---@overload fun(): BaseClass
 ---
 BaseClass = {}
 
@@ -16,6 +17,8 @@ setmetatable(BaseClass, {
         return self:NewInstance(...)
     end
 })
+
+local instance = BaseClass()
 
 ------------------------------------------------------------------------------------------
 -- Instance functions
@@ -226,6 +229,10 @@ end
 ---Subscribes to an Event on the instance
 ---@param sEvent string @The name of the event to subscribe to
 ---@param callback function @The callback to call when the event is triggered
+---@overload fun(self: BaseClass, sEvent: "Spawn", callback: fun(self: BaseClass))
+---@overload fun(self: BaseClass, sEvent: "Destroy", callback: fun(self: BaseClass))
+---@overload fun(self: BaseClass, sEvent: "ValueChange", callback: fun(self: BaseClass, sKey: string, xValue: any))
+---@overload fun(self: BaseClass, sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
 ---@return function|nil @The callback
 ---
 function BaseClass:Subscribe(sEvent, callback)
