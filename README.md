@@ -17,22 +17,6 @@ The documentation contains information about installation, usage and more
 
 [https://timmy.gitbook.io/classlib-1/](https://timmy.gitbook.io/classlib-1/)
 
----
-
-# 🐛 Bug report/Feature request
-
-If you find a bug or have a feature request you can add it [here](https://github.com/Timmy-the-nobody/ClassLib/issues/new/choose)
-
----
-
-# 💡 Pull Requests
-
-Your PRs are welcome!
-
-However, in order to keep a clean code base, please follow the coding conventions that are applied in this resource
-
----
-
 # 📑 Key Features
 
 - Lua OOP Framework
@@ -42,13 +26,17 @@ However, in order to keep a clean code base, please follow the coding convention
 - Portability
   - While <b>ClassLib</b> is tailored for nanos world, it boasts a high degree of portability. With 95% of the library written in pure Lua, it can be easily adapted to other projects and platforms as needed.
 
-------
+# 🐛 Bug report/Feature request
+
+If you find a bug or have a feature request you can add it [here](https://github.com/Timmy-the-nobody/ClassLib/issues/new/choose)
+
+# 💡 Pull Requests
+
+Your PRs are welcome! However, in order to keep a clean code base, please follow the coding conventions that are applied in this resource
 
 # Credits
 
-The inception of <b>ClassLib</b> owes credit to [MegaThorx](https://github.com/MegaThorx) and their EGUI package, serving as the foundation for the initial version.
-
-Over time, it has evolved significantly, but the gratitude towards MegaThorx remains for inspiring the library's development.
+The inception of **ClassLib** is credited to [MegaThorx](https://github.com/MegaThorx) and their EGUI package, serving as the foundational inspiration.
 
 Special thanks go to [Mouloud](https://github.com/MouloudP) and [Aerox](https://github.com/aeroxfr) for their invaluable contributions in testing and providing feedback during the early stages of the library.
 
