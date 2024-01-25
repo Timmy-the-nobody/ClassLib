@@ -199,6 +199,10 @@ end
 ---Subscribes to an Event on the Class
 ---@param sEvent string @The name of the event to listen to
 ---@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
+---@overload fun(self: BaseClass, sEvent: "Spawn", callback: fun(self: BaseClass))
+---@overload fun(self: BaseClass, sEvent: "Destroy", callback: fun(self: BaseClass))
+---@overload fun(self: BaseClass, sEvent: "ValueChange", callback: fun(self: BaseClass, sKey: string, xValue: any))
+---@overload fun(self: BaseClass, sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
 ---@return function|nil @The callback
 ---
 function BaseClass.ClassSubscribe(sEvent, callback)
