@@ -94,6 +94,16 @@ function BaseClass:IsValid()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if the instance is from a passed class, or from a class that inherits from the passed class
+---@param oClass table @The class to check against
+---@param bRecursive boolean @Whether to check recursively
+---@return boolean @Whether the value is an object from the class
+---
+function BaseClass:IsA(oClass, bRecursive)
+    return ClassLib.IsA(self, oClass, bRecursive)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if the instance is being destroyed
 ---@return boolean @Whether the instance is being destroyed
 ---
@@ -283,7 +293,7 @@ end
 ---Sets a key/value on the instance
 ---@param sKey string @Key
 ---@param xValue any @Value
----@param bBroadcast boolean @Whether to broadcast the change to all clients (server only)
+---@param bBroadcast boolean @Whether to broadcast the key/value to all clients (server only)
 ---
 function BaseClass:SetValue(sKey, xValue, bBroadcast)
     return ClassLib.SetValue(self, sKey, xValue, bBroadcast)
@@ -301,7 +311,7 @@ end
 
 if Server then
     ---`🔹 Server`<br>
-    ---Checks if a key is broadcasted
+    ---Returns wether a key has it's value is broadcasted
     ---@param sKey string @Key
     ---@return boolean @Whether the key is broadcasted
     ---

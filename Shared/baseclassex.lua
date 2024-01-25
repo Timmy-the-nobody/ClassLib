@@ -4,18 +4,18 @@ local type = type
 ---`BaseClassEx` is a class that represents an extended base class.<br>
 ---It inherits from `BaseClass` and adds some useful functions to it.
 ---@class BaseClassEx : BaseClass
----@overload fun(sClassName: string, bBroadcastCreation?: boolean): BaseClassEx
+---@overload fun(sClassName: string, bSync?: boolean): BaseClassEx
 ---
 BaseClassEx = BaseClass.Inherit("BaseClassEx")
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
----@param bBroadcastCreation? boolean @Whether to broadcast the creation of a new instance of the class
+---@param bSync? boolean @Whether to broadcast the creation of a new instance of the class
 ---@return table @The new class
 ---
-function BaseClassEx.Inherit(sClassName, bBroadcastCreation)
-    return ClassLib.Inherit(BaseClassEx, sClassName, bBroadcastCreation)
+function BaseClassEx.Inherit(sClassName, bSync)
+    return ClassLib.Inherit(BaseClassEx, sClassName, bSync)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>

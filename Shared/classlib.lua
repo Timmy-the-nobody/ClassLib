@@ -373,10 +373,10 @@ end
 ---Creates a new class that inherits from the passed class
 ---@param oInheritFrom table @The class to inherit from
 ---@param sClassName string @The name of the class
----@param bBroadcastCreation boolean @Whether to broadcast the creation of a new instance of the class
+---@param bSync boolean @Whether to broadcast the creation of a new instance of the class
 ---@return table @The new class
 ---
-function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
+function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
 	if tClassesMap[sClassName] then
 		Console.Warn("[ClassLib] Attempt to create a class with a name that already exists")
@@ -385,7 +385,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 
 	assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
-	bBroadcastCreation = (bBroadcastCreation and true or false)
+	bSync = (bSync and true or false)
 
 	local tFromMT = getmetatable(oInheritFrom)
 	local oNewClass = setmetatable({}, {
@@ -408,7 +408,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 		__remote_events = {},
 		__instances = {},
 		__next_id = 1,
-		__broadcast_creation = bBroadcastCreation
+		__broadcast_creation = bSync
 	})
 
 	local tClassMT = getmetatable(oNewClass)
@@ -420,7 +420,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bBroadcastCreation)
 	function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
-	function oNewClass.Inherit(sName, bBroadcast) return ClassLib.Inherit(oNewClass, sName, bBroadcastCreation) end
+	function oNewClass.Inherit(sName, bBroadcast) return ClassLib.Inherit(oNewClass, sName, bSync) end
 
 	-- Adds static functions related to local events to the new class
 	function oNewClass.ClassCall(sEvent, ...) return ClassLib.Call(oNewClass, sEvent, ...) end
