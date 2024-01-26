@@ -27,6 +27,19 @@ local tCopyFromParentClassOnInherit = {
 	"__tostring"
 }
 
+local tCopyFromClassOnNewInstance = {
+	"__newindex",
+	"__call",
+	"__unm",
+	"__add",
+	"__sub",
+	"__mul",
+	"__div",
+	"__pow",
+	"__concat",
+	"__tostring"
+}
+
 -- Cache some globals
 local type = type
 local setmetatable = setmetatable
@@ -403,6 +416,10 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	local tFromMT = getmetatable(oInheritFrom)
 
 	local tNewMT = {}
+	for _, sKey in ipairs(tCopyFromParentClassOnInherit) do
+		tNewMT[sKey] = tFromMT[sKey]
+	end
+
 	tNewMT.__index = oInheritFrom
 	tNewMT.__super = oInheritFrom
 	tNewMT.__classname = sClassName
@@ -411,10 +428,6 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	tNewMT.__instances = {}
 	tNewMT.__next_id = 1
 	tNewMT.__broadcast_creation = bSync
-
-	for _, sKey in ipairs(tCopyFromParentClassOnInherit) do
-		tNewMT[sKey] = tFromMT[sKey]
-	end
 
 	local oNewClass = setmetatable({}, tNewMT)
 	local tClassMT = getmetatable(oNewClass)
@@ -453,26 +466,20 @@ function ClassLib.NewInstance(oClass, ...)
 	assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
 	local tClassMT = getmetatable(oClass)
-	local oInstance = setmetatable({}, {
-		__index = oClass,
-		__super = ClassLib.Super(oClass),
-		__newindex = oClass.__newindex,
-		__call = oClass.__call,
-		__len = oClass.__len,
-		__unm = oClass.__unm,
-		__add = oClass.__add,
-		__sub = oClass.__sub,
-		__mul = oClass.__mul,
-		__div = oClass.__div,
-		__pow = oClass.__pow,
-		__concat = oClass.__concat,
-		__tostring = oClass.__tostring,
 
-		__classname = tClassMT.__classname,
-		__is_valid = true,
-		__events = {},
-		__broadcasted_values = {},
-	})
+	local tNewMT = {}
+	for _, sKey in ipairs(tCopyFromClassOnNewInstance) do
+		tNewMT[sKey] = oClass[sKey]
+	end
+
+	tNewMT.__index = oClass
+	tNewMT.__super = ClassLib.Super(oClass)
+	tNewMT.__classname = tClassMT.__classname
+	tNewMT.__is_valid = true
+	tNewMT.__events = {}
+	tNewMT.__broadcasted_values = {}
+
+	local oInstance = setmetatable({}, tNewMT)
 
 	-- Add instance to the class instance table
     oInstance.id = tClassMT.__next_id
