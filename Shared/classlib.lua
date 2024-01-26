@@ -13,6 +13,19 @@ local tEventsMap = {
 	["ClassLib:CLToSV"] = "_::3",
 	["ClassLib:SVToCL"] = "_::4",
 }
+local tCopyFromParentClassOnInherit = {
+	"__newindex",
+	"__call",
+	"__len",
+	"__unm",
+	"__add",
+	"__sub",
+	"__mul",
+	"__div",
+	"__pow",
+	"__concat",
+	"__tostring"
+}
 
 -- Cache some globals
 local type = type
@@ -388,29 +401,22 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	bSync = (bSync and true or false)
 
 	local tFromMT = getmetatable(oInheritFrom)
-	local oNewClass = setmetatable({}, {
-		__index = oInheritFrom,
-		__super = oInheritFrom,
-		__newindex = tFromMT.__newindex,
-		__call = tFromMT.__call,
-		__len = tFromMT.__len,
-		__unm = tFromMT.__unm,
-		__add = tFromMT.__add,
-		__sub = tFromMT.__sub,
-		__mul = tFromMT.__mul,
-		__div = tFromMT.__div,
-		__pow = tFromMT.__pow,
-		__concat = tFromMT.__concat,
-		__tostring = tFromMT.__tostring,
 
-		__classname = sClassName,
-		__events = {},
-		__remote_events = {},
-		__instances = {},
-		__next_id = 1,
-		__broadcast_creation = bSync
-	})
+	local tNewMT = {}
+	tNewMT.__index = oInheritFrom
+	tNewMT.__super = oInheritFrom
+	tNewMT.__classname = sClassName
+	tNewMT.__events = {}
+	tNewMT.__remote_events = {}
+	tNewMT.__instances = {}
+	tNewMT.__next_id = 1
+	tNewMT.__broadcast_creation = bSync
 
+	for _, sKey in ipairs(tCopyFromParentClassOnInherit) do
+		tNewMT[sKey] = tFromMT[sKey]
+	end
+
+	local oNewClass = setmetatable({}, tNewMT)
 	local tClassMT = getmetatable(oNewClass)
 
 	-- Add static functions to the new class
@@ -420,16 +426,16 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
-	function oNewClass.Inherit(sName, bBroadcast) return ClassLib.Inherit(oNewClass, sName, bSync) end
+	function oNewClass.Inherit(...) return ClassLib.Inherit(oNewClass, ...) end
 
 	-- Adds static functions related to local events to the new class
 	function oNewClass.ClassCall(sEvent, ...) return ClassLib.Call(oNewClass, sEvent, ...) end
-	function oNewClass.ClassSubscribe(sEvent, callback) return ClassLib.Subscribe(oNewClass, sEvent, callback) end
-	function oNewClass.ClassUnsubscribe(sEvent, callback) return ClassLib.Unsubscribe(oNewClass, sEvent, callback) end
+	function oNewClass.ClassSubscribe(...) return ClassLib.Subscribe(oNewClass, ...) end
+	function oNewClass.ClassUnsubscribe(...) return ClassLib.Unsubscribe(oNewClass, ...) end
 
 	-- Adds static functions related to remote events to the new class
-	function oNewClass.SubscribeRemote(sEvent, callback) return ClassLib.SubscribeRemote(oNewClass, sEvent, callback) end
-	function oNewClass.UnsubscribeRemote(sEvent, callback) return ClassLib.UnsubscribeRemote(oNewClass, sEvent, callback) end
+	function oNewClass.SubscribeRemote(...) return ClassLib.SubscribeRemote(oNewClass, ...) end
+	function oNewClass.UnsubscribeRemote(...) return ClassLib.UnsubscribeRemote(oNewClass, ...) end
 
 	tClassesMap[sClassName] = oNewClass
 
