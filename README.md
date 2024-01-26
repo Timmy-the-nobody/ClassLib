@@ -1,4 +1,4 @@
-![classlib_logo_rectangle](https://github.com/Timmy-the-nobody/ClassLib/assets/51171246/e0c93725-f301-4c81-96c3-1d28ba13702a)
+![classlib_github_social_preview](https://github.com/Timmy-the-nobody/ClassLib/assets/51171246/39f9e12a-8a8b-4c22-9d0c-089ffdca98c8)
 
 [![GitHub release](https://img.shields.io/github/release/Timmy-the-nobody/ClassLib.svg)](https://GitHub.com/Timmy-the-nobody/ClassLib/releases/)
 [![GitHub Repo stars](https://img.shields.io/github/stars/Timmy-the-nobody/ClassLib)](https://github.com/Timmy-the-nobody/ClassLib/stargazers)
