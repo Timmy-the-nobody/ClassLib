@@ -11,11 +11,17 @@ Whether you are an experienced nanos world scripter or new to Lua OOP, <b>ClassL
 
 ---
 
-## 📘 Documentation Website
+# 📘 Documentation Website
 
 The documentation contains information about installation, usage and more
 
 [https://timmy.gitbook.io/classlib-1/](https://timmy.gitbook.io/classlib-1/)
+
+# 🎒 Examples
+
+Some simple examples on how to use ClassLib
+
+[https://timmy.gitbook.io/classlib-1/getting-started/examples/](https://timmy.gitbook.io/classlib-1/getting-started/examples/)
 
 # 📑 Key Features
 
