@@ -189,7 +189,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Calls an Event on the Class
 ---@param sEvent string @The name of the event to call
----@vararg any @The arguments to pass to the event
+---@param ... any @The arguments to pass to the event
 ---
 function BaseClass.ClassCall(sEvent, ...)
     return ClassLib.Call(BaseClass, sEvent, ...)
@@ -221,7 +221,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Calls an Event on the instance
 ---@param sEvent string @The name of the event to call
----@vararg any @The arguments to pass to the event
+---@param ... any @The arguments to pass to the event
 ---
 function BaseClass:Call(sEvent, ...)
     return ClassLib.Call(self, sEvent, ...)
@@ -277,7 +277,7 @@ if Client then
     ---`🔸 Client`<br>
     ---Calls a remote event from the client to the server
     ---@param sEvent string @The name of the event to call
-    ---@vararg any @The arguments to pass to the event
+    ---@param ... any @The arguments to pass to the event
     ---
     function BaseClass:CallRemote(sEvent, ...)
         return ClassLib.CallRemote_Client(self, sEvent, ...)
@@ -288,7 +288,7 @@ elseif Server then
     ---Calls a remote event from the server to the client
     ---@param sEvent string @The name of the event to call
     ---@param xPlayer Player|table<number, Player> @The player (or table of players) to which to send the event
-    ---@vararg any @The arguments to pass to the event
+    ---@param ... any @The arguments to pass to the event
     ---
     function BaseClass:CallRemote(sEvent, xPlayer, ...)
         ClassLib.CallRemote_Server(self, sEvent, xPlayer, ...)
@@ -297,7 +297,7 @@ elseif Server then
     ---`🔹 Server`<br>
     ---Broadcast a remote event from the server to all clients
     ---@param sEvent string @The name of the event to broadcast
-    ---@vararg any @The arguments to pass to the event
+    ---@param ... any @The arguments to pass to the event
     ---
     function BaseClass:BroadcastRemote(sEvent, ...)
         ClassLib.BroadcastRemote(self, sEvent, ...)

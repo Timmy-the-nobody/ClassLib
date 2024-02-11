@@ -200,7 +200,7 @@ end
 ---Calls an Event
 ---@param oInput table @The object to call the event on
 ---@param sEvent string @The name of the event to call
----@vararg any @The arguments to pass to the event
+---@param ... any @The arguments to pass to the event
 ---
 function ClassLib.Call(oInput, sEvent, ...)
 	local tMT = getmetatable(oInput)
@@ -266,7 +266,7 @@ if Client then
 	---Calls a remote event from the client to the server
 	---@param oInput table @The object to call the event from
 	---@param sEvent string @The name of the event to call
-	---@vararg any @The arguments to pass to the event
+	---@param ... any @The arguments to pass to the event
 	---
 	function ClassLib.CallRemote_Client(oInput, sEvent, ...)
 		if (type(sEvent) ~= "string") then return end
@@ -298,7 +298,7 @@ elseif Server then
 	---@param oInput table @The object to call the event on
 	---@param sEvent string @The name of the event to call
 	---@param xPlayer Player|table<number, Player> @The player (or table of players) to send the event to
-	---@vararg any @The arguments to pass to the event
+	---@param ... any @The arguments to pass to the event
 	---
 	function ClassLib.CallRemote_Server(oInput, sEvent, xPlayer, ...)
 		if (type(sEvent) ~= "string") then return end
