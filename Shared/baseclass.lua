@@ -308,7 +308,7 @@ end
 ---Sets a key/value on the instance
 ---@param sKey string @Key
 ---@param xValue any @Value
----@param bBroadcast? boolean | nil @Whether to broadcast the key/value to all clients (server only)
+---@param bBroadcast? boolean @Whether to broadcast the key/value to all clients (server only)
 ---
 function BaseClass:SetValue(sKey, xValue, bBroadcast)
     return ClassLib.SetValue(self, sKey, xValue, bBroadcast)
