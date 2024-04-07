@@ -13,6 +13,7 @@ local tEventsMap = {
 	["ClassLib:CLToSV"] = "_::3",
 	["ClassLib:SVToCL"] = "_::4",
 }
+
 local tCopyFromParentClassOnInherit = {
 	"__newindex",
 	"__call",
@@ -86,6 +87,18 @@ function ClassLib.SuperAll(oInput)
 	end
 
 	return tSuper
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns a sequential table of all classes that inherit from the passed class
+---@param oClass table @The class
+---@return table<integer, table> @The inherited classes
+---
+function ClassLib.GetInheritedClasses(oClass)
+    local tMT = getmetatable(oClass)
+    if not tMT then return {} end
+
+    return tMT.__inherited_classes or {}
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -428,6 +441,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	tNewMT.__instances = {}
 	tNewMT.__next_id = 1
 	tNewMT.__broadcast_creation = bSync
+	tNewMT.__inherited_classes = {}
 
 	local oNewClass = setmetatable({}, tNewMT)
 	local tClassMT = getmetatable(oNewClass)
@@ -440,6 +454,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
 	function oNewClass.Inherit(...) return ClassLib.Inherit(oNewClass, ...) end
+	function oNewClass.GetInheritedClasses(...) return ClassLib.GetInheritedClasses(oNewClass, ...) end
 
 	-- Adds static functions related to local events to the new class
 	function oNewClass.ClassCall(sEvent, ...) return ClassLib.Call(oNewClass, sEvent, ...) end
@@ -451,6 +466,9 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	function oNewClass.UnsubscribeRemote(...) return ClassLib.UnsubscribeRemote(oNewClass, ...) end
 
 	tClassesMap[sClassName] = oNewClass
+
+	tFromMT.__inherited_classes = tFromMT.__inherited_classes or {}
+	tFromMT.__inherited_classes[#tFromMT.__inherited_classes + 1] = oNewClass
 
 	ClassLib.Call(oInheritFrom, "ClassRegister", oNewClass)
 

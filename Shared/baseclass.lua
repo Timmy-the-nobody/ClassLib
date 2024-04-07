@@ -173,6 +173,14 @@ function BaseClass.GetAllParentClasses()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Returns a sequential table of all classes that inherit from this class
+---@return table<integer, table> @The inherited classes
+---
+function BaseClass.GetInheritedClasses()
+    return ClassLib.GetInheritedClasses(BaseClass)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
 ---@param bSync? boolean @Whether to sync the creation/destruction of an instance of the class and it's broadcasted values to all players
