@@ -455,7 +455,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
 	function oNewClass.Inherit(...) return ClassLib.Inherit(oNewClass, ...) end
-	function oNewClass.GetInheritedClasses(...) return ClassLib.GetInheritedClasses(oNewClass, ...) end
+	function oNewClass.GetInheritedClasses() return ClassLib.GetInheritedClasses(oNewClass) end
 
 	-- Adds static functions related to local events to the new class
 	function oNewClass.ClassCall(sEvent, ...) return ClassLib.Call(oNewClass, sEvent, ...) end
