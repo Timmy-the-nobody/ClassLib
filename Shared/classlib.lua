@@ -435,6 +435,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 
 	tNewMT.__index = oInheritFrom
 	tNewMT.__super = oInheritFrom
+	tNewMT.__name = ("%s Class"):format(sClassName)
 	tNewMT.__classname = sClassName
 	tNewMT.__events = {}
 	tNewMT.__remote_events = {}
@@ -492,6 +493,7 @@ function ClassLib.NewInstance(oClass, ...)
 
 	tNewMT.__index = oClass
 	tNewMT.__super = ClassLib.Super(oClass)
+	tNewMT.__name = tClassMT.__classname
 	tNewMT.__classname = tClassMT.__classname
 	tNewMT.__is_valid = true
 	tNewMT.__events = {}
