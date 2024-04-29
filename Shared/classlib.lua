@@ -497,6 +497,7 @@ function ClassLib.NewInstance(oClass, ...)
 	tNewMT.__classname = tClassMT.__classname
 	tNewMT.__is_valid = true
 	tNewMT.__events = {}
+	tNewMT.__values = {}
 	tNewMT.__broadcasted_values = {}
 
 	local oInstance = setmetatable({}, tNewMT)
