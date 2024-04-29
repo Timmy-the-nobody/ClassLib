@@ -332,6 +332,15 @@ function BaseClass:GetValue(sKey, xFallback)
     return ClassLib.GetValue(self, sKey, xFallback)
 end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns all values of the instance set by `SetValue`
+---@param bBroadcastedOnly? boolean @Whether to only return broadcasted values
+---@return table<string, any> @All values
+---
+function BaseClass:GetAllValuesKeys(bBroadcastedOnly)
+    return ClassLib.GetAllValuesKeys(self, bBroadcastedOnly)
+end
+
 if Server then
     ---`🔹 Server`<br>
     ---Returns wether a key has it's value is broadcasted

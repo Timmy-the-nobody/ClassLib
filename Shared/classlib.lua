@@ -608,7 +608,7 @@ end
 ---@param oInstance table @The instance to set the value on
 ---@param sKey string @The key to set the value on
 ---@param xValue any @The value to set
----@param bBroadcast? boolean @Whether to broadcast the value change (server only)
+---@param bBroadcast? boolean @Server: Whether to broadcast the value change, Client: Mark the value as broadcasted
 ---@return boolean|nil @Return true if the value was set, nil otherwise
 ---
 function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
@@ -621,23 +621,24 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 	if not tMT then return end
 
 	oInstance[sKey] = xValue
+	tMT.__values[sKey] = xValue
 
 	ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue)
 	ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue)
 
-	if not Server or not bBroadcast then
-		return true
+	if bBroadcast then
+		tMT.__broadcasted_values[sKey] = xValue
+
+		if Server then
+			Events.BroadcastRemote(
+				tEventsMap["ClassLib:SetValue"],
+				oInstance:GetClassName(),
+				oInstance.id,
+				sKey,
+				xValue
+			)
+		end
 	end
-
-	tMT.__broadcasted_values[sKey] = xValue
-
-	Events.BroadcastRemote(
-		tEventsMap["ClassLib:SetValue"],
-		oInstance:GetClassName(),
-		oInstance.id,
-		sKey,
-		xValue
-	)
 
 	return true
 end
@@ -655,6 +656,23 @@ function ClassLib.GetValue(oInstance, sKey, xFallback)
 	if (oInstance[sKey] == nil) then return xFallback end
 
 	return oInstance[sKey]
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Gets all values from an instance
+---@param oInstance table @The instance to get the values from
+---@param bBroadcastedOnly? boolean @Whether to only get broadcasted values
+---@return table @Table with the key as key and the value as value
+---
+function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
+	local tMT = getmetatable(oInstance)
+	if not tMT then return {} end
+
+	if bBroadcastedOnly then
+		return tMT.__broadcasted_values
+	end
+
+	return tMT.__values
 end
 
 if Server then
@@ -756,6 +774,6 @@ if Client then
 		local oInstance = tClass.GetByID(nID)
 		if not oInstance then return end
 
-		ClassLib.SetValue(oInstance, sKey, xValue)
+		ClassLib.SetValue(oInstance, sKey, xValue, true)
 	end)
 end
