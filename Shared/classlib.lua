@@ -207,7 +207,7 @@ end
 -- Internal function to check if a value is a ClassLib instance
 local function isClassLibInstance(xAny)
 	if (type(xAny) ~= "table") then return false end
-	if not xAny.__is_valid then return false end
+	if not xAny.IsValid or not xAny:IsValid() then return false end
 	return true
 end
 
