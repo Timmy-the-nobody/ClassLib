@@ -18,7 +18,6 @@ setmetatable(BaseClass, {
     end
 })
 
-------------------------------------------------------------------------------------------
 -- Instance functions
 ------------------------------------------------------------------------------------------
 
@@ -126,7 +125,6 @@ function BaseClass:GetClassName()
     return ClassLib.GetClassName(self)
 end
 
-------------------------------------------------------------------------------------------
 -- Static functions
 -- These just serves for EmmyLua annotations, the real functions are in `ClassLib.Inherit`
 ------------------------------------------------------------------------------------------
@@ -190,7 +188,6 @@ function BaseClass.Inherit(sClassName, bSync)
     return ClassLib.Inherit(BaseClass, sClassName, bSync)
 end
 
-------------------------------------------------------------------------------------------
 -- Events
 ------------------------------------------------------------------------------------------
 
@@ -258,7 +255,6 @@ function BaseClass:Unsubscribe(sEvent, callback)
     return ClassLib.Unsubscribe(self, sEvent, callback)
 end
 
-------------------------------------------------------------------------------------------
 -- Networking
 ------------------------------------------------------------------------------------------
 

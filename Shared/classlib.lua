@@ -205,7 +205,6 @@ local function __getInstanceByID(tMT, iID)
 	end
 end
 
-------------------------------------------------------------------------------------------
 -- Local Events
 ------------------------------------------------------------------------------------------
 
@@ -270,7 +269,6 @@ function ClassLib.Unsubscribe(oInput, sEvent, callback)
 	tEvents[sEvent] = tNew
 end
 
-------------------------------------------------------------------------------------------
 -- Remote Events
 ------------------------------------------------------------------------------------------
 
@@ -294,15 +292,27 @@ if Client then
 		local tClass = tClassesMap[sClassName]
 		if not tClass then return end
 
-		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
-		if not oInstance then return end
-
 		local tRemoteEvents = getmetatable(tClass).__remote_events
 		if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
 
-		for _, callback in ipairs(tRemoteEvents[sEvent]) do
-			callback(oInstance, ...)
+		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
+		if oInstance then
+			for _, callback in ipairs(tRemoteEvents[sEvent]) do
+				callback(oInstance, ...)
+			end
+			return
 		end
+
+		-- Wait for the instance to spawn if it hasn't already
+		local varArgs = {...}
+		tClass.ClassSubscribe("Spawn", function(self)
+			if (self:GetID() ~= iID) then return end
+
+			for _, callback in ipairs(tRemoteEvents[sEvent]) do
+				callback(self, table.unpack(varArgs))
+			end
+			return false
+		end)
 	end)
 
 elseif Server then
@@ -333,6 +343,12 @@ elseif Server then
 		end
 	end
 
+	---`🔹 Server`<br>
+	---Broadcasts a remote event from the server to all connected clients
+	---@param oInput table @The object to broadcast the event on
+	---@param sEvent string @The name of the event to broadcast
+	---@param ... any @The arguments to pass to the event
+	---
 	function ClassLib.BroadcastRemote(oInput, sEvent, ...)
 		if (type(sEvent) ~= "string") then return end
 
@@ -404,7 +420,6 @@ function ClassLib.UnsubscribeRemote(oInput, sEvent, callback)
 	tRemoteEvents[sEvent] = tNewCallbacks
 end
 
-------------------------------------------------------------------------------------------
 -- ClassLib
 ------------------------------------------------------------------------------------------
 
@@ -513,7 +528,14 @@ function ClassLib.NewInstance(oClass, ...)
 		rawget(oClass, "Constructor")(oInstance, ...)
 	end
 
-	ClassLib.Call(oClass, "Spawn", oInstance)
+	if Client then
+		Timer.SetTimeout(function()
+			if not oInstance:IsValid() then return end
+			ClassLib.Call(oClass, "Spawn", oInstance)
+		end, 0)
+	else
+		ClassLib.Call(oClass, "Spawn", oInstance)
+	end
 
 	if tClassMT.__broadcast_creation and Server then
 		ClassLib.SyncInstanceConstruct(oInstance)
@@ -600,10 +622,6 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 	return oClone
 end
 
-----------------------------------------------------------------------
--- Sync
-----------------------------------------------------------------------
-
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Sets a value on an instance
 ---@param oInstance table @The instance to set the value on
@@ -676,6 +694,9 @@ function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
 	return tMT.__values
 end
 
+-- Sync
+----------------------------------------------------------------------
+
 if Server then
 	---`🔹 Server`<br>
 	---Checks if a key is broadcasted
@@ -745,14 +766,14 @@ end
 
 if Client then
 	-- Net Event: "ClassLib:Constructor"
-	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, nID, tSyncValues)
+	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, iID, tSyncValues)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
 
 		local oInstance = tClass(tClass)
-		oInstance.id = nID
+		oInstance.id = iID
 
-        getmetatable(tClass).__instances[nID] = oInstance
+        getmetatable(tClass).__instances[iID] = oInstance
 
 		for sKey, xValue in pairs(tSyncValues) do
 			ClassLib.SetValue(oInstance, sKey, xValue)
@@ -760,19 +781,19 @@ if Client then
 	end)
 
 	-- Net Event: "ClassLib:Destructor"
-	Events.SubscribeRemote(tEventsMap["ClassLib:Destructor"], function(sClassName, nID)
+	Events.SubscribeRemote(tEventsMap["ClassLib:Destructor"], function(sClassName, iID)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
 
-		ClassLib.Destroy(tClass.GetByID(nID))
+		ClassLib.Destroy(tClass.GetByID(iID))
 	end)
 
 	-- Net Event: "ClassLib:SetValue"
-	Events.SubscribeRemote(tEventsMap["ClassLib:SetValue"], function(sClassName, nID, sKey, xValue)
+	Events.SubscribeRemote(tEventsMap["ClassLib:SetValue"], function(sClassName, iID, sKey, xValue)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
 
-		local oInstance = tClass.GetByID(nID)
+		local oInstance = tClass.GetByID(iID)
 		if not oInstance then return end
 
 		ClassLib.SetValue(oInstance, sKey, xValue, true)
