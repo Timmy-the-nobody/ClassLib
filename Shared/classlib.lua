@@ -52,7 +52,6 @@ local error = error
 local assert = assert
 local rawget = rawget
 
-------------------------------------------------------------------------------------------
 -- Utils
 ------------------------------------------------------------------------------------------
 
@@ -203,6 +202,13 @@ local function __getInstanceByID(tMT, iID)
 			return oInstance
 		end
 	end
+end
+
+-- Internal function to check if a value is a ClassLib instance
+local function isClassLibInstance(xAny)
+	if (type(xAny) ~= "table") then return false end
+	if not xAny.__is_valid then return false end
+	return true
 end
 
 -- Local Events
@@ -549,9 +555,7 @@ end
 ---@param oInstance table @The instance to destroy
 ---
 function ClassLib.Destroy(oInstance, ...)
-	if not oInstance.IsValid or not oInstance:IsValid() then
-		error("[ClassLib] Attempt to delete an invalid object")
-	end
+	assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to destroy an invalid object")
 
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
@@ -599,7 +603,7 @@ end
 ---@return table @The new instance
 ---
 function ClassLib.Clone(oInstance, tIgnoredKeys)
-	assert((type(oInstance) == "table"), "[ClassLib] The object passed to ClassLib.Clone is not a table")
+	assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to clone an invalid object")
 
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] The object passed to ClassLib.Clone has no valid class")
@@ -631,7 +635,7 @@ end
 ---@return boolean|nil @Return true if the value was set, nil otherwise
 ---
 function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
-	assert((type(oInstance) == "table"), "[ClassLib] The object passed to ClassLib.SetValue is not a table")
+	assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
 	assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
 	assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
 	assert((sKey ~= "id"), "[ClassLib] Attempt to set the ID as a value")
@@ -670,6 +674,8 @@ end
 ---@return any @Value
 ---
 function ClassLib.GetValue(oInstance, sKey, xFallback)
+	assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to get a value from an invalid object")
+
 	local tMT = getmetatable(oInstance)
 	if not tMT then return xFallback end
 	if (oInstance[sKey] == nil) then return xFallback end
@@ -684,6 +690,8 @@ end
 ---@return table @Table with the key as key and the value as value
 ---
 function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
+	assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to get all values from an invalid object")
+
 	local tMT = getmetatable(oInstance)
 	if not tMT then return {} end
 
@@ -705,6 +713,8 @@ if Server then
 	---@return boolean @Whether the key is broadcasted
 	---
 	function ClassLib.IsValueBroadcasted(oInstance, sKey)
+		assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to check if a value is broadcasted from an invalid object")
+
 		local tMT = getmetatable(oInstance)
 		if not tMT then return false end
 		return tMT.__broadcasted_values[sKey] ~= nil
@@ -716,6 +726,8 @@ if Server then
 	---@param pPlayer Player|nil @The player that created the instance, nil to broadcast to all players
 	---
 	function ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
+		assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to sync the construction of an invalid object")
+
 		if (getmetatable(pPlayer) == Player) then
 			Events.CallRemote(
 				tEventsMap["ClassLib:Constructor"],
@@ -740,6 +752,8 @@ if Server then
 	---@param oInstance table @The instance to sync
 	---
 	function ClassLib.SyncInstanceDestroy(oInstance)
+		assert(isClassLibInstance(oInstance), "[ClassLib] Attempt to sync the destruction of an invalid object")
+
 		Events.BroadcastRemote(
 			tEventsMap["ClassLib:Destructor"],
 			oInstance:GetClassName(),
