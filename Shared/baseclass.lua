@@ -11,25 +11,14 @@
 ---
 BaseClass = {}
 
+-- local tProxies = BaseClass
+
+-- BaseClass = {}
+
 setmetatable(BaseClass, {
     __classname = "BaseClass",
     __call = function(self, ...)
         return self:NewInstance(...)
-    end,
-    __newindex = function(self, xKey, xValue)
-        rawset(self, xKey, xValue)
-
-        if (xKey ~= "id") then return end
-
-        if self.GetClass then
-            local tClass = self:GetClass()
-            if tClass then
-                local tClassMT = getmetatable(tClass)
-                if tClassMT and tClassMT.__instances_map then
-                    tClassMT.__instances_map[xValue] = self
-                end
-            end
-        end
     end
 })
 

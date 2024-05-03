@@ -170,8 +170,8 @@ end
 ---@return integer|nil @Instance ID
 ---
 function ClassLib.GetID(oInstance)
-	if (type(oInstance) ~= "table") then return end
-	return oInstance.id
+	if (type(oInstance) ~= "table") or not oInstance.GetValue then return end
+	return oInstance:GetValue("id")
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -510,11 +510,10 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
 	local oInstance = setmetatable({}, tNewMT)
 
 	-- Add instance to the class instance table
-    oInstance.id = iForcedID or tClassMT.__next_id
+    oInstance:SetValue("id", iForcedID or tClassMT.__next_id)
 
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
 	tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
-	tClassMT.__instances_map[oInstance.id] = oInstance
 
 	-- Call constructor
 	if rawget(oClass, "Constructor") then
@@ -619,10 +618,26 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
 	assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
 	assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
-	assert((sKey ~= "id"), "[ClassLib] Attempt to set the ID as a value")
 
 	local tMT = getmetatable(oInstance)
 	if not tMT then return end
+
+	-- Handle ID change
+	if (sKey == "id") then
+		if (type(xValue) ~= "number") then return end
+
+		local xOldValue = tMT.__values[sKey]
+		local tClass = oInstance:GetClass()
+		if tClass then
+			local tClassMT = getmetatable(tClass)
+			if tClassMT and tClassMT.__instances_map then
+				if xOldValue then
+					tClassMT.__instances_map[xOldValue] = nil
+				end
+				tClassMT.__instances_map[xValue] = oInstance
+			end
+		end
+	end
 
 	oInstance[sKey] = xValue
 	tMT.__values[sKey] = xValue
@@ -637,7 +652,7 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 			Events.BroadcastRemote(
 				tEventsMap["ClassLib:SetValue"],
 				oInstance:GetClassName(),
-				oInstance.id,
+				oInstance:GetID(),
 				sKey,
 				xValue
 			)
@@ -659,9 +674,16 @@ function ClassLib.GetValue(oInstance, sKey, xFallback)
 
 	local tMT = getmetatable(oInstance)
 	if not tMT then return xFallback end
-	if (oInstance[sKey] == nil) then return xFallback end
 
-	return oInstance[sKey]
+	if (tMT.__values[sKey] ~= nil) then
+		return tMT.__values[sKey]
+	end
+
+	if (oInstance[sKey] ~= nil) then
+		return oInstance[sKey]
+	end
+
+	return xFallback
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -714,7 +736,7 @@ if Server then
 				tEventsMap["ClassLib:Constructor"],
 				pPlayer,
 				oInstance:GetClassName(),
-				oInstance.id,
+				oInstance:GetID(),
 				getmetatable(oInstance).__broadcasted_values
 			)
 			return
@@ -723,7 +745,7 @@ if Server then
 		Events.BroadcastRemote(
 			tEventsMap["ClassLib:Constructor"],
 			oInstance:GetClassName(),
-			oInstance.id,
+			oInstance:GetID(),
 			getmetatable(oInstance).__broadcasted_values
 		)
 	end
@@ -738,7 +760,7 @@ if Server then
 		Events.BroadcastRemote(
 			tEventsMap["ClassLib:Destructor"],
 			oInstance:GetClassName(),
-			oInstance.id
+			oInstance:GetID()
 		)
 	end
 
