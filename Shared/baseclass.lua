@@ -27,7 +27,7 @@ setmetatable(BaseClass, {
 ---@return table @The new instance
 ---
 function BaseClass:NewInstance(...)
-    return ClassLib.NewInstance(self, ...)
+    return ClassLib.NewInstance(self, nil, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>

@@ -493,9 +493,10 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new instance of the passed class
 ---@param oClass table @The class to create an instance of
+---@param iForcedID? number @The forced ID of the instance, used for syncing
 ---@return table @The new instance
 ---
-function ClassLib.NewInstance(oClass, ...)
+function ClassLib.NewInstance(oClass, iForcedID, ...)
 	assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
 	local tClassMT = getmetatable(oClass)
@@ -517,7 +518,7 @@ function ClassLib.NewInstance(oClass, ...)
 	local oInstance = setmetatable({}, tNewMT)
 
 	-- Add instance to the class instance table
-    oInstance.id = tClassMT.__next_id
+    oInstance.id = iForcedID or tClassMT.__next_id
 
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
 	tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
@@ -527,14 +528,7 @@ function ClassLib.NewInstance(oClass, ...)
 		rawget(oClass, "Constructor")(oInstance, ...)
 	end
 
-	if Client then
-		Timer.SetTimeout(function()
-			if not oInstance:IsValid() then return end
-			ClassLib.Call(oClass, "Spawn", oInstance)
-		end, 0)
-	else
-		ClassLib.Call(oClass, "Spawn", oInstance)
-	end
+	ClassLib.Call(oClass, "Spawn", oInstance)
 
 	if tClassMT.__broadcast_creation and Server then
 		ClassLib.SyncInstanceConstruct(oInstance)
@@ -777,8 +771,7 @@ if Client then
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
 
-		local oInstance = tClass(tClass)
-		oInstance.id = iID
+		local oInstance = ClassLib.NewInstance(tClass, iID)
 
         getmetatable(tClass).__instances[iID] = oInstance
 
