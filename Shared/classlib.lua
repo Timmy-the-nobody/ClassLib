@@ -195,15 +195,6 @@ function ClassLib.GetClassName(oClass)
 	return tMT.__classname
 end
 
--- Internal function to get an instance by its ID
-local function __getInstanceByID(tMT, iID)
-	for _, oInstance in ipairs(tMT.__instances) do
-		if (oInstance.id == iID) then
-			return oInstance
-		end
-	end
-end
-
 -- Local Events
 ------------------------------------------------------------------------------------------
 
@@ -294,7 +285,7 @@ if Client then
 		local tRemoteEvents = getmetatable(tClass).__remote_events
 		if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
 
-		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
+		local oInstance = getmetatable(tClass).__instances_map[iID]
 		if oInstance then
 			for _, callback in ipairs(tRemoteEvents[sEvent]) do
 				callback(oInstance, ...)
@@ -361,7 +352,7 @@ elseif Server then
 		local tClass = tClassesMap[sClassName]
 		if not tClass then return end
 
-		local oInstance = __getInstanceByID(getmetatable(tClass), iID)
+		local oInstance = getmetatable(tClass).__instances_map[iID]
 		if not oInstance then return end
 
 		local tRemoteEvents = getmetatable(tClass).__remote_events
@@ -454,6 +445,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	tNewMT.__events = {}
 	tNewMT.__remote_events = {}
 	tNewMT.__instances = {}
+	tNewMT.__instances_map = {}
 	tNewMT.__next_id = 1
 	tNewMT.__broadcast_creation = bSync
 	tNewMT.__inherited_classes = {}
@@ -464,7 +456,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	-- Add static functions to the new class
     function oNewClass.GetAll() return tClassMT.__instances end
 	function oNewClass.GetCount() return #tClassMT.__instances end
-	function oNewClass.GetByID(iID) return __getInstanceByID(tClassMT, iID) end
+	function oNewClass.GetByID(iID) return tClassMT.__instances_map[iID] end
 	function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
 	function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
 	function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
@@ -503,7 +495,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
 
 	local tNewMT = {}
 	for _, sKey in ipairs(tCopyFromClassOnNewInstance) do
-		tNewMT[sKey] = oClass[sKey]
+		tNewMT[sKey] = tClassMT[sKey]
 	end
 
 	tNewMT.__index = oClass
@@ -522,6 +514,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
 
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
 	tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
+	tClassMT.__instances_map[oInstance.id] = oInstance
 
 	-- Call constructor
 	if rawget(oClass, "Constructor") then
@@ -569,6 +562,7 @@ function ClassLib.Destroy(oInstance, ...)
         end
     end
 	tClassMT.__instances = tNewList
+	tClassMT.__instances_map[oInstance:GetID()] = nil
 
 	if tClassMT.__broadcast_creation and Server then
 		ClassLib.SyncInstanceDestroy(oInstance)
