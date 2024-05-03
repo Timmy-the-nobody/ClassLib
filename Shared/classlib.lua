@@ -7,11 +7,11 @@
 ClassLib = {}
 local tClassesMap = {}
 local tEventsMap = {
-	["ClassLib:Constructor"] = "_::0",
-	["ClassLib:Destructor"] = "_::1",
-	["ClassLib:SetValue"] = "_::2",
-	["ClassLib:CLToSV"] = "_::3",
-	["ClassLib:SVToCL"] = "_::4",
+	["ClassLib:Constructor"] = "C0",
+	["ClassLib:Destructor"] = "C1",
+	["ClassLib:SetValue"] = "C2",
+	["ClassLib:CLToSV"] = "C3",
+	["ClassLib:SVToCL"] = "C4",
 }
 
 local tCopyFromParentClassOnInherit = {
@@ -761,7 +761,7 @@ end
 
 if Client then
 	-- Net Event: "ClassLib:Constructor"
-	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, iID, tSyncValues)
+	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, iID, tBroadcastedValues)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
 
@@ -769,7 +769,7 @@ if Client then
 
         getmetatable(tClass).__instances[iID] = oInstance
 
-		for sKey, xValue in pairs(tSyncValues) do
+		for sKey, xValue in pairs(tBroadcastedValues) do
 			ClassLib.SetValue(oInstance, sKey, xValue)
 		end
 	end)
