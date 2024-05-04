@@ -282,10 +282,11 @@ if Client then
 		local tClass = tClassesMap[sClassName]
 		if not tClass then return end
 
-		local tRemoteEvents = getmetatable(tClass).__remote_events
+		local tClassMT = getmetatable(tClass)
+		local tRemoteEvents = tClassMT.__remote_events
 		if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
 
-		local oInstance = getmetatable(tClass).__instances_map[iID]
+		local oInstance = tClassMT.__instances_map[iID]
 		if oInstance then
 			for _, callback in ipairs(tRemoteEvents[sEvent]) do
 				callback(oInstance, ...)
@@ -624,16 +625,19 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 
 	-- Handle ID change
 	if (sKey == "id") then
-		if (type(xValue) ~= "number") then return end
+		assert((type(xValue) == "number"), "[ClassLib] The ID passed to ClassLib.SetValue is not a number")
+		assert((math.floor(xValue) == xValue), "[ClassLib] The ID passed to ClassLib.SetValue is not an integer")
 
-		local xOldValue = tMT.__values[sKey]
 		local tClass = oInstance:GetClass()
 		if tClass then
 			local tClassMT = getmetatable(tClass)
 			if tClassMT and tClassMT.__instances_map then
-				if xOldValue then
-					tClassMT.__instances_map[xOldValue] = nil
+				local iOldID = ClassLib.GetValue(oInstance, "id")
+				-- Remove `[old ID] = instance` from the instance map
+				if iOldID then
+					tClassMT.__instances_map[iOldID] = nil
 				end
+				-- Store `[new ID] = instance in the instance map
 				tClassMT.__instances_map[xValue] = oInstance
 			end
 		end
