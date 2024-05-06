@@ -269,13 +269,13 @@ if Client then
 	---@param sEvent string @The name of the event to call
 	---@param ... any @The arguments to pass to the event
 	---
-	function ClassLib.CallRemote_Client(oInput, sEvent, ...)
+	function ClassLib.CallRemote_Client(oInstance, sEvent, ...)
 		if (type(sEvent) ~= "string") then return end
 
-		local sClass = ClassLib.GetClassName(oInput)
+		local sClass = ClassLib.GetClassName(oInstance)
 		if not sClass then return end
 
-		Events.CallRemote(tEventsMap["ClassLib:CLToSV"], sClass, oInput:GetID(), sEvent, ...)
+		Events.CallRemote(tEventsMap["ClassLib:CLToSV"], sClass, oInstance:GetID(), sEvent, ...)
 	end
 
 	Events.SubscribeRemote(tEventsMap["ClassLib:SVToCL"], function(sClassName, iID, sEvent, ...)
@@ -314,22 +314,23 @@ elseif Server then
 	---@param xPlayer Player|table<number, Player> @The player (or table of players) to send the event to
 	---@param ... any @The arguments to pass to the event
 	---
-	function ClassLib.CallRemote_Server(oInput, sEvent, xPlayer, ...)
+	function ClassLib.CallRemote_Server(oInstance, sEvent, xPlayer, ...)
 		if (type(sEvent) ~= "string") then return end
 
-		local sClass = ClassLib.GetClassName(oInput)
+		local sClass = ClassLib.GetClassName(oInstance)
 		if not sClass then return end
 
 		if (getmetatable(xPlayer) == Player) then
-			Events.CallRemote(tEventsMap["ClassLib:SVToCL"], xPlayer, sClass, oInput:GetID(), sEvent, ...)
+			Events.CallRemote(tEventsMap["ClassLib:SVToCL"], xPlayer, sClass, oInstance:GetID(), sEvent, ...)
 			return
 		end
 
 		if (type(xPlayer) ~= "table") then return end
 
+		local iID = oInstance:GetID()
 		for _, pPlayer in ipairs(xPlayer) do
 			if (getmetatable(pPlayer) == Player) then
-				Events.CallRemote(tEventsMap["ClassLib:SVToCL"], pPlayer, sClass, oInput:GetID(), sEvent, ...)
+				Events.CallRemote(tEventsMap["ClassLib:SVToCL"], pPlayer, sClass, iID, sEvent, ...)
 			end
 		end
 	end
@@ -340,13 +341,13 @@ elseif Server then
 	---@param sEvent string @The name of the event to broadcast
 	---@param ... any @The arguments to pass to the event
 	---
-	function ClassLib.BroadcastRemote(oInput, sEvent, ...)
+	function ClassLib.BroadcastRemote(oInstance, sEvent, ...)
 		if (type(sEvent) ~= "string") then return end
 
-		local sClass = ClassLib.GetClassName(oInput)
+		local sClass = ClassLib.GetClassName(oInstance)
 		if not sClass then return end
 
-		Events.BroadcastRemote(tEventsMap["ClassLib:SVToCL"], sClass, oInput:GetID(), sEvent, ...)
+		Events.BroadcastRemote(tEventsMap["ClassLib:SVToCL"], sClass, oInstance:GetID(), sEvent, ...)
 	end
 
 	Events.SubscribeRemote(tEventsMap["ClassLib:CLToSV"], function(pPlayer, sClassName, iID, sEvent, ...)
@@ -372,10 +373,10 @@ end
 ---@param callback function @The callback to call when the event is triggered
 ---@return function|nil @The callback
 ---
-function ClassLib.SubscribeRemote(oInput, sEvent, callback)
+function ClassLib.SubscribeRemote(oInstance, sEvent, callback)
 	if (type(sEvent) ~= "string") then return end
 
-	local tRemoteEvents = getmetatable(oInput).__remote_events
+	local tRemoteEvents = getmetatable(oInstance).__remote_events
 	if not tRemoteEvents then return end
 
 	tRemoteEvents[sEvent] = tRemoteEvents[sEvent] or {}
@@ -390,10 +391,10 @@ end
 ---@param sEvent string @The name of the event to unsubscribe from+
 ---@param callback? function @The callback to unsubscribe
 ---
-function ClassLib.UnsubscribeRemote(oInput, sEvent, callback)
+function ClassLib.UnsubscribeRemote(oInstance, sEvent, callback)
 	if (type(sEvent) ~= "string") then return end
 
-	local tRemoteEvents = getmetatable(oInput).__remote_events
+	local tRemoteEvents = getmetatable(oInstance).__remote_events
 	if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
 
 	if (type(callback) ~= "function") then
@@ -511,7 +512,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
 	local oInstance = setmetatable({}, tNewMT)
 
 	-- Add instance to the class instance table
-    oInstance:SetValue("id", iForcedID or tClassMT.__next_id)
+	ClassLib.SetValue(oInstance, "id", iForcedID or tClassMT.__next_id)
 
 	tClassMT.__next_id = (tClassMT.__next_id + 1)
 	tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
@@ -592,6 +593,19 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 	local oClone = ClassLib.NewInstance(oClass)
 	local bCheckIgnoredKeys = (type(tIgnoredKeys) == "table")
 
+	-- Copy classlib values
+	for sKey, xVal in pairs(oInstance:GetAllValuesKeys()) do
+		if (sKey == "id") then goto continue end
+		if bCheckIgnoredKeys then
+			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
+				if (sKey == sIgnoredKey) then goto continue end
+			end
+		end
+		oClone:SetValue(sKey, xVal, false)
+		::continue::
+	end
+
+	-- Copy classic values
 	for sKey, xVal in pairs(oInstance) do
 		if (sKey == "id") then goto continue end
 		if bCheckIgnoredKeys then
@@ -599,7 +613,6 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 				if (sKey == sIgnoredKey) then goto continue end
 			end
 		end
-
 		oClone[sKey] = xVal
 		::continue::
 	end
