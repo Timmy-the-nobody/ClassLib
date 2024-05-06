@@ -606,14 +606,16 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 	end
 
 	-- Copy classlib values
-	for sKey, xVal in pairs(oInstance:GetAllValuesKeys()) do
+	local tBroadcastedValues = ClassLib.GetAllValuesKeys(oInstance, true)
+
+	for sKey, xVal in pairs(ClassLib.GetAllValuesKeys(oInstance, false)) do
 		if (sKey == "id") then goto continue end
 		if bCheckIgnoredKeys then
 			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
 				if (sKey == sIgnoredKey) then goto continue end
 			end
 		end
-		oClone:SetValue(sKey, xVal, false)
+		ClassLib.SetValue(oClone, sKey, xVal, (tBroadcastedValues[sKey] and Server))
 		::continue::
 	end
 
