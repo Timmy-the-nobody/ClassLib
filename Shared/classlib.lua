@@ -593,18 +593,6 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 	local oClone = ClassLib.NewInstance(oClass)
 	local bCheckIgnoredKeys = (type(tIgnoredKeys) == "table")
 
-	-- Copy classlib values
-	for sKey, xVal in pairs(oInstance:GetAllValuesKeys()) do
-		if (sKey == "id") then goto continue end
-		if bCheckIgnoredKeys then
-			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
-				if (sKey == sIgnoredKey) then goto continue end
-			end
-		end
-		oClone:SetValue(sKey, xVal, false)
-		::continue::
-	end
-
 	-- Copy classic values
 	for sKey, xVal in pairs(oInstance) do
 		if (sKey == "id") then goto continue end
@@ -614,6 +602,18 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 			end
 		end
 		oClone[sKey] = xVal
+		::continue::
+	end
+
+	-- Copy classlib values
+	for sKey, xVal in pairs(oInstance:GetAllValuesKeys()) do
+		if (sKey == "id") then goto continue end
+		if bCheckIgnoredKeys then
+			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
+				if (sKey == sIgnoredKey) then goto continue end
+			end
+		end
+		oClone:SetValue(sKey, xVal, false)
 		::continue::
 	end
 
