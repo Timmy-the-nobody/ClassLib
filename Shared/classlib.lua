@@ -787,10 +787,15 @@ if Server then
 
 		local tSyncInstances = {}
 		for _, oInstance in ipairs(tClassMT.__instances) do
+			if not oInstance:IsValid() then goto continue end
+			if oInstance:IsBeingDestroyed() then goto continue end
+
 			tSyncInstances[#tSyncInstances + 1] = {
 				oInstance:GetID(),
 				getmetatable(oInstance).__broadcasted_values
 			}
+
+			::continue::
 		end
 
 		Events.CallRemote(
