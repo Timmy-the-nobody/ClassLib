@@ -12,6 +12,7 @@ local tEventsMap = {
 	["ClassLib:SetValue"] = "C2",
 	["ClassLib:CLToSV"] = "C3",
 	["ClassLib:SVToCL"] = "C4",
+	["ClassLib:SyncAllClassInstances"] = "C5",
 }
 
 local tCopyFromParentClassOnInherit = {
@@ -745,7 +746,7 @@ if Server then
 	---`🔹 Server`<br>
 	---Internal function to sync the creation of an instance, you shouldn't call this directly
 	---@param oInstance table @The instance to sync
-	---@param pPlayer Player|nil @The player that created the instance, nil to broadcast to all players
+	---@param pPlayer Player|nil @The player to send the sync to, nil to broadcast to all players
 	---
 	function ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
 		assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the construction of an invalid object")
@@ -770,7 +771,38 @@ if Server then
 	end
 
 	---`🔹 Server`<br>
-	---Internal function to sync the destruction of an instance, you shouldn't call this directly
+	---Internal function to sync all instances of a class, you shouldn't call this directly
+	---@param sClass string @The class to sync
+	---@param pPlayer Player @The player to send the sync to
+	---
+	function ClassLib.SyncAllClassInstances(sClass, pPlayer)
+		assert((tClassesMap[sClass] ~= nil), "[ClassLib] Attempt to sync all instances of an invalid class")
+		assert((getmetatable(pPlayer) == Player), "[ClassLib] Attempt to sync all instances to an invalid player")
+
+		local tClass = tClassesMap[sClass]
+		local tClassMT = getmetatable(tClass)
+
+		if not tClassMT.__broadcast_creation then return end
+		if (#tClassMT.__instances == 0) then return end
+
+		local tSyncInstances = {}
+		for _, oInstance in ipairs(tClassMT.__instances) do
+			tSyncInstances[#tSyncInstances + 1] = {
+				oInstance:GetID(),
+				getmetatable(oInstance).__broadcasted_values
+			}
+		end
+
+		Events.CallRemote(
+			tEventsMap["ClassLib:SyncAllClassInstances"],
+			pPlayer,
+			sClass,
+			tSyncInstances
+		)
+	end
+
+	---`🔹 Server`<br>
+	---Internal function to sync the destruction of an instance (to all players), you shouldn't call this directly
 	---@param oInstance table @The instance to sync
 	---
 	function ClassLib.SyncInstanceDestroy(oInstance)
@@ -783,21 +815,11 @@ if Server then
 		)
 	end
 
-	local function onPlayerReady(pPlayer)
+	Player.Subscribe("Ready", function(pPlayer)
 		for sClass, oClass in pairs(tClassesMap) do
-			local tClassMT = getmetatable(oClass)
-			if not tClassMT.__broadcast_creation then goto continue end
-			if (#tClassMT.__instances == 0) then goto continue end
-
-			for _, oInstance in ipairs(tClassMT.__instances) do
-				ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
-			end
-
-			::continue::
+			ClassLib.SyncAllClassInstances(sClass, pPlayer)
 		end
-	end
-
-	Player.Subscribe("Ready", onPlayerReady)
+	end)
 end
 
 if Client then
@@ -808,10 +830,8 @@ if Client then
 
 		local oInstance = ClassLib.NewInstance(tClass, iID)
 
-        getmetatable(tClass).__instances[iID] = oInstance
-
 		for sKey, xValue in pairs(tBroadcastedValues) do
-			ClassLib.SetValue(oInstance, sKey, xValue)
+			ClassLib.SetValue(oInstance, sKey, xValue, true)
 		end
 	end)
 
@@ -832,5 +852,19 @@ if Client then
 		if not oInstance then return end
 
 		ClassLib.SetValue(oInstance, sKey, xValue, true)
+	end)
+
+	-- Net Event: "ClassLib:SyncAllClassInstances"
+	Events.SubscribeRemote(tEventsMap["ClassLib:SyncAllClassInstances"], function(sClassName, tInstances)
+		local tClass = ClassLib.GetClassByName(sClassName)
+		if not tClass then return end
+
+		for _, tInstance in ipairs(tInstances) do
+			local oInstance = ClassLib.NewInstance(tClass, tInstance[1])
+
+			for sKey, xValue in pairs(tInstance[2]) do
+				ClassLib.SetValue(oInstance, sKey, xValue, true)
+			end
+		end
 	end)
 end
