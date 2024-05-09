@@ -599,7 +599,11 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
 	-- Copy classic values
 	for sKey, xVal in pairs(oInstance) do
 		if (sKey == "id") then goto continue end
-		if bCheckIgnoredKeys and table.HasValue(tIgnoredKeys, sKey) then goto continue end
+		if bCheckIgnoredKeys then
+			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
+				if (sKey == sIgnoredKey) then goto continue end
+			end
+		end
 
 		oClone[sKey] = xVal
 		::continue::
@@ -610,7 +614,11 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
 
 	for sKey, xVal in pairs(ClassLib.GetAllValuesKeys(oInstance, false)) do
 		if (sKey == "id") then goto continue end
-		if bCheckIgnoredKeys and table.HasValue(tIgnoredKeys, sKey) then goto continue end
+		if bCheckIgnoredKeys then
+			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
+				if (sKey == sIgnoredKey) then goto continue end
+			end
+		end
 
 		local bBroadcast = (tBroadcastedValues[sKey] and Server)
 		ClassLib.SetValue(oClone, sKey, xVal, bBroadcast)
