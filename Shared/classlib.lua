@@ -489,6 +489,7 @@ end
 ---Creates a new instance of the passed class
 ---@param oClass table @The class to create an instance of
 ---@param iForcedID? number @The forced ID of the instance, used for syncing
+---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
 ---
 function ClassLib.NewInstance(oClass, iForcedID, ...)
@@ -583,25 +584,23 @@ end
 ---Clones an instance, and return a new instance with the same values (except it's ID)
 ---@param oInstance table @The instance to clone
 ---@param tIgnoredKeys? table @The properties to ignore (sequential table)
+---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
 ---
-function ClassLib.Clone(oInstance, tIgnoredKeys)
+function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to clone an invalid object")
 
 	local oClass = ClassLib.GetClass(oInstance)
 	assert((type(oClass) == "table"), "[ClassLib] The object passed to ClassLib.Clone has no valid class")
 
-	local oClone = ClassLib.NewInstance(oClass)
+	local oClone = ClassLib.NewInstance(oClass, nil, ...)
 	local bCheckIgnoredKeys = (type(tIgnoredKeys) == "table")
 
 	-- Copy classic values
 	for sKey, xVal in pairs(oInstance) do
 		if (sKey == "id") then goto continue end
-		if bCheckIgnoredKeys then
-			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
-				if (sKey == sIgnoredKey) then goto continue end
-			end
-		end
+		if bCheckIgnoredKeys and table.HasValue(tIgnoredKeys, sKey) then goto continue end
+
 		oClone[sKey] = xVal
 		::continue::
 	end
@@ -611,12 +610,10 @@ function ClassLib.Clone(oInstance, tIgnoredKeys)
 
 	for sKey, xVal in pairs(ClassLib.GetAllValuesKeys(oInstance, false)) do
 		if (sKey == "id") then goto continue end
-		if bCheckIgnoredKeys then
-			for _, sIgnoredKey in ipairs(tIgnoredKeys) do
-				if (sKey == sIgnoredKey) then goto continue end
-			end
-		end
-		ClassLib.SetValue(oClone, sKey, xVal, (tBroadcastedValues[sKey] and Server))
+		if bCheckIgnoredKeys and table.HasValue(tIgnoredKeys, sKey) then goto continue end
+
+		local bBroadcast = (tBroadcastedValues[sKey] and Server)
+		ClassLib.SetValue(oClone, sKey, xVal, bBroadcast)
 		::continue::
 	end
 
@@ -820,11 +817,28 @@ if Server then
 		)
 	end
 
+	-- Old "SyncAll" event
 	Player.Subscribe("Ready", function(pPlayer)
 		for sClass, oClass in pairs(tClassesMap) do
+			local tClassMT = getmetatable(oClass)
+			if not tClassMT.__broadcast_creation then goto continue end
+			if (#tClassMT.__instances == 0) then goto continue end
+
+			for _, oInstance in ipairs(tClassMT.__instances) do
+				ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
+			end
+
+			::continue::
 			ClassLib.SyncAllClassInstances(sClass, pPlayer)
 		end
 	end)
+
+	-- New "SyncAll" event
+	-- Player.Subscribe("Ready", function(pPlayer)
+	-- 	for sClass, oClass in pairs(tClassesMap) do
+	-- 		ClassLib.SyncAllClassInstances(sClass, pPlayer)
+	-- 	end
+	-- end)
 end
 
 if Client then

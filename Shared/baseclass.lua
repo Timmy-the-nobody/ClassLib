@@ -89,10 +89,11 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Clones the instance, and return a new instance with the same values (except it's ID)
 ---@param tIgnoredKeys? table @The properties to ignore (sequential table)
+---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
 ---
-function BaseClass:Clone(tIgnoredKeys)
-    return ClassLib.Clone(self, tIgnoredKeys)
+function BaseClass:Clone(tIgnoredKeys, ...)
+    return ClassLib.Clone(self, tIgnoredKeys, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
