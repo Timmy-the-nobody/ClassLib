@@ -11,10 +11,6 @@
 ---
 BaseClass = {}
 
--- local tProxies = BaseClass
-
--- BaseClass = {}
-
 setmetatable(BaseClass, {
     __classname = "BaseClass",
     __call = function(self, ...)
