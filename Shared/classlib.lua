@@ -837,7 +837,6 @@ if Server then
 			end
 
 			::continue::
-			ClassLib.SyncAllClassInstances(sClass, pPlayer)
 		end
 	end)
 
