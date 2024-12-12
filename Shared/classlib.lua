@@ -266,7 +266,7 @@ end
 if Client then
 	---`🔸 Client`<br>
 	---Calls a remote event from the client to the server
-	---@param oInput table @The object to call the event from
+	---@param oInstance table @The object to call the event from
 	---@param sEvent string @The name of the event to call
 	---@param ... any @The arguments to pass to the event
 	---
@@ -310,7 +310,7 @@ if Client then
 elseif Server then
 	---`🔹 Server`<br>
 	---Calls a remote event from the server to the client
-	---@param oInput table @The object to call the event on
+	---@param oInstance table @The object to call the event on
 	---@param sEvent string @The name of the event to call
 	---@param xPlayer Player|table<number, Player> @The player (or table of players) to send the event to
 	---@param ... any @The arguments to pass to the event
@@ -338,7 +338,7 @@ elseif Server then
 
 	---`🔹 Server`<br>
 	---Broadcasts a remote event from the server to all connected clients
-	---@param oInput table @The object to broadcast the event on
+	---@param oInstance table @The object to broadcast the event on
 	---@param sEvent string @The name of the event to broadcast
 	---@param ... any @The arguments to pass to the event
 	---
