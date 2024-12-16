@@ -52,7 +52,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class from which this instance inherits
----@return table|nil @The super class
+---@return table? @The super class
 ---
 function BaseClass:Super()
     return ClassLib.Super(self)
@@ -68,7 +68,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class table of the instance
----@return table|nil @The class
+---@return table? @The class
 ---
 function BaseClass:GetClass()
     return ClassLib.GetClass(self)
@@ -76,7 +76,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the ID of the instance, unique to the class
----@return integer|nil @Instance ID
+---@return integer? @Instance ID
 ---
 function BaseClass:GetID()
     return ClassLib.GetID(self)
@@ -120,7 +120,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class name of the instance
----@return string|nil @The class name
+---@return string? @The class name
 ---
 function BaseClass:GetClassName()
     return ClassLib.GetClassName(self)
@@ -149,7 +149,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns an instance of this class from the instance unique ID
 ---@param iID integer @The ID of the instance
----@return table|nil @The instance, or nil if it doesn't exist
+---@return table? @The instance, or nil if it doesn't exist
 ---
 function BaseClass.GetByID(iID)
     return {}
@@ -157,7 +157,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class from which this class inherits
----@return table|nil @The super class
+---@return table? @The super class
 ---
 function BaseClass.GetParentClass()
     return BaseClass
@@ -209,7 +209,7 @@ end
 ---@overload fun(self: BaseClass, sEvent: "Destroy", callback: fun(self: BaseClass))
 ---@overload fun(self: BaseClass, sEvent: "ValueChange", callback: fun(self: BaseClass, sKey: string, xValue: any))
 ---@overload fun(self: BaseClass, sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
----@return function|nil @The callback
+---@return function? @The callback
 ---
 function BaseClass.ClassSubscribe(sEvent, callback)
     return ClassLib.Subscribe(BaseClass, sEvent, callback)
@@ -241,7 +241,7 @@ end
 ---@overload fun(self: BaseClass, sEvent: "Destroy", callback: fun(self: BaseClass))
 ---@overload fun(self: BaseClass, sEvent: "ValueChange", callback: fun(self: BaseClass, sKey: string, xValue: any))
 ---@overload fun(self: BaseClass, sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
----@return function|nil @The callback
+---@return function? @The callback
 ---
 function BaseClass:Subscribe(sEvent, callback)
     return ClassLib.Subscribe(self, sEvent, callback)
@@ -263,7 +263,7 @@ end
 ---Subscribes to a remote event
 ---@param sEvent string @The name of the event to subscribe to
 ---@param callback function @The callback to call when the event is triggered
----@return function|nil @The callback
+---@return function? @The callback
 ---
 function BaseClass.SubscribeRemote(sEvent, callback)
     return ClassLib.SubscribeRemote(BaseClass, sEvent, callback)
