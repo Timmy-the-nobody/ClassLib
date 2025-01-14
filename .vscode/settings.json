@@ -2,7 +2,8 @@
     "Lua.diagnostics.globals": [
         "Client",
         "Events",
-        "Package"
+        "Package",
+        "Server"
     ],
     "Lua.diagnostics.disable": [
         "unused-local",

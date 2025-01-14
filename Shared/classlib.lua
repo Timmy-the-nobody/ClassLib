@@ -48,7 +48,6 @@ local setmetatable = setmetatable
 local getmetatable = getmetatable
 local ipairs = ipairs
 local pairs = pairs
-local tostring = tostring
 local error = error
 local assert = assert
 local rawget = rawget
