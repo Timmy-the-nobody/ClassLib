@@ -451,6 +451,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	tNewMT.__next_id = 1
 	tNewMT.__broadcast_creation = bSync
 	tNewMT.__inherited_classes = {}
+	tNewMT.__classlib_class = true
 
 	local oNewClass = setmetatable({}, tNewMT)
 	local tClassMT = getmetatable(oNewClass)
@@ -509,6 +510,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
 	tNewMT.__events = {}
 	tNewMT.__values = {}
 	tNewMT.__broadcasted_values = {}
+	tNewMT.__classlib_instance = true
 
 	local oInstance = setmetatable({}, tNewMT)
 
@@ -727,6 +729,32 @@ function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
 	end
 
 	return tMT.__values
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if a value is a ClassLib class
+---@param xClass any @The value to check
+---@return boolean @Whether the value is a ClassLib class
+---@see ClassLib.IsClassLibInstance
+---
+function ClassLib.IsClassLibClass(xClass)
+	if (type(xClass) ~= "table") then return false end
+
+	local tMT = getmetatable(xClass)
+	return (tMT and tMT.__classlib_class) and true or false
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if a value is a ClassLib instance
+---@param xInstance any @The value to check
+---@return boolean @Whether the value is a ClassLib instance
+---@see ClassLib.IsClassLibClass
+---
+function ClassLib.IsClassLibInstance(xInstance)
+	if (type(xInstance) ~= "table") then return false end
+
+	local tMT = getmetatable(xInstance)
+	return (tMT and tMT.__classlib_instance) and true or false
 end
 
 -- Sync
