@@ -160,7 +160,7 @@ end
 ---@return table? @The super class
 ---
 function BaseClass.GetParentClass()
-    return BaseClass
+    return {}
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>

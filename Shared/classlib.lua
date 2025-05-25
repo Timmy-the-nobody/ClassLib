@@ -5,6 +5,7 @@
 ]]--
 
 ClassLib = {}
+
 local tClassesMap = {}
 local tEventsMap = {
 	["ClassLib:Constructor"] = "C0",
@@ -53,13 +54,12 @@ local assert = assert
 local rawget = rawget
 
 -- Utils
-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class from which an object inherits
 ---@param oInput table @The object
----@return table|nil @The super class
----
+---@return table? @The super class
 function ClassLib.Super(oInput)
 	local tMT = getmetatable(oInput)
 	if not tMT then return end
@@ -71,7 +71,6 @@ end
 ---Returns a sequential table of all classes from which an object inherits
 ---@param oInput table @The object
 ---@return table<integer, table> @The super classes
----
 function ClassLib.SuperAll(oInput)
 	local tSuper = {}
 	local oSuper = ClassLib.Super(oInput) or {}
@@ -92,7 +91,6 @@ end
 ---Returns a sequential table of all classes that inherit from the passed class
 ---@param oClass table @The class
 ---@return table<integer, table> @The inherited classes
----
 function ClassLib.GetInheritedClasses(oClass)
     local tMT = getmetatable(oClass)
     if not tMT then return {} end
@@ -106,7 +104,6 @@ end
 ---@param oClass table @The class to check against
 ---@param bRecursive boolean @Whether to check recursively
 ---@return boolean @Whether the value is an object from the class
----
 function ClassLib.IsA(xVal, oClass, bRecursive)
 	if (type(xVal) ~= "table") then return false end
 	if (ClassLib.GetClass(xVal) == oClass) then return true end
@@ -125,7 +122,6 @@ end
 ---Checks if the passed object is a valid instance
 ---@param oInstance table @The instance to check
 ---@return boolean @True if the instance is valid, false otherwise
----
 function ClassLib.IsValid(oInstance)
 	if (type(oInstance) ~= "table") then return false end
 
@@ -140,7 +136,6 @@ end
 ---Checks if the passed object is being destroyed
 ---@param oInstance table @The instance to check
 ---@return boolean @True if the instance is being destroyed, false otherwise
----
 function ClassLib.IsBeingDestroyed(oInstance)
 	if (type(oInstance) ~= "table") then return false end
 
@@ -154,8 +149,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class of an object
 ---@param oInstance table @The object
----@return table|nil @The class
----
+---@return table? @The class
 function ClassLib.GetClass(oInstance)
 	if (type(oInstance) ~= "table") then return end
 
@@ -167,8 +161,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the ID of the instance, unique to the class
----@return integer|nil @Instance ID
----
+---@return integer? @Instance ID
 function ClassLib.GetID(oInstance)
 	if (type(oInstance) ~= "table") or not oInstance.GetValue then return end
 	return oInstance:GetValue("id")
@@ -177,8 +170,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns a class object by its name
 ---@param sClassName string @The name of the class
----@return table|nil @The class
----
+---@return table? @The class
 function ClassLib.GetClassByName(sClassName)
 	return tClassesMap[sClassName]
 end
@@ -186,8 +178,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the name of a class
 ---@param oClass table @The class
----@return string|nil @The name of the class
----
+---@return string? @The name of the class
 function ClassLib.GetClassName(oClass)
 	local tMT = getmetatable(oClass)
 	if not tMT then return end
@@ -196,14 +187,13 @@ function ClassLib.GetClassName(oClass)
 end
 
 -- Local Events
-------------------------------------------------------------------------------------------
+---------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Calls an Event
 ---@param oInput table @The object to call the event on
 ---@param sEvent string @The name of the event to call
 ---@param ... any @The arguments to pass to the event
----
 function ClassLib.Call(oInput, sEvent, ...)
 	local tMT = getmetatable(oInput)
 	local tEvents = tMT.__events
@@ -222,8 +212,7 @@ end
 ---@param oInput table @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
 ---@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
----@return function|nil @The callback
----
+---@return function? @The callback
 function ClassLib.Subscribe(oInput, sEvent, callback)
 	local tEvents = getmetatable(oInput).__events
 	if not tEvents then return end
@@ -239,7 +228,6 @@ end
 ---@param oInput table @The object to unsubscribe from
 ---@param sEvent string @The name of the event to unsubscribe from
 ---@param callback? function @The callback to unsubscribe
----
 function ClassLib.Unsubscribe(oInput, sEvent, callback)
 	local tEvents = getmetatable(oInput).__events
 	if not tEvents[sEvent] then return end
@@ -260,7 +248,7 @@ function ClassLib.Unsubscribe(oInput, sEvent, callback)
 end
 
 -- Remote Events
-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 if Client then
 	---`🔸 Client`<br>
@@ -268,7 +256,6 @@ if Client then
 	---@param oInstance table @The object to call the event from
 	---@param sEvent string @The name of the event to call
 	---@param ... any @The arguments to pass to the event
-	---
 	function ClassLib.CallRemote_Client(oInstance, sEvent, ...)
 		if (type(sEvent) ~= "string") then return end
 
@@ -313,7 +300,6 @@ elseif Server then
 	---@param sEvent string @The name of the event to call
 	---@param xPlayer Player|table<number, Player> @The player (or table of players) to send the event to
 	---@param ... any @The arguments to pass to the event
-	---
 	function ClassLib.CallRemote_Server(oInstance, sEvent, xPlayer, ...)
 		if (type(sEvent) ~= "string") then return end
 
@@ -340,7 +326,6 @@ elseif Server then
 	---@param oInstance table @The object to broadcast the event on
 	---@param sEvent string @The name of the event to broadcast
 	---@param ... any @The arguments to pass to the event
-	---
 	function ClassLib.BroadcastRemote(oInstance, sEvent, ...)
 		if (type(sEvent) ~= "string") then return end
 
@@ -368,11 +353,10 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Subscribes to a remote event
----@param oInput table @The object that will subscribe to the event
+---@param oInstance table @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
 ---@param callback function @The callback to call when the event is triggered
----@return function|nil @The callback
----
+---@return function? @The callback
 function ClassLib.SubscribeRemote(oInstance, sEvent, callback)
 	if (type(sEvent) ~= "string") then return end
 
@@ -387,10 +371,9 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unsubscribes from a remote event
----@param oInput table @The object to unsubscribe from
+---@param oInstance table @The object to unsubscribe from
 ---@param sEvent string @The name of the event to unsubscribe from+
 ---@param callback? function @The callback to unsubscribe
----
 function ClassLib.UnsubscribeRemote(oInstance, sEvent, callback)
 	if (type(sEvent) ~= "string") then return end
 
@@ -413,7 +396,7 @@ function ClassLib.UnsubscribeRemote(oInstance, sEvent, callback)
 end
 
 -- ClassLib
-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from the passed class
@@ -421,7 +404,6 @@ end
 ---@param sClassName string @The name of the class
 ---@param bSync boolean @Whether to broadcast the creation of a new instance of the class
 ---@return table @The new class
----
 function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 	if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
 	if tClassesMap[sClassName] then
@@ -491,7 +473,6 @@ end
 ---@param iForcedID? number @The forced ID of the instance, used for syncing
 ---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
----
 function ClassLib.NewInstance(oClass, iForcedID, ...)
 	assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
@@ -537,7 +518,6 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Destroys an instance of a class
 ---@param oInstance table @The instance to destroy
----
 function ClassLib.Destroy(oInstance, ...)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to destroy an invalid object")
 
@@ -587,7 +567,6 @@ end
 ---@param tIgnoredKeys? table @The properties to ignore (sequential table)
 ---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
----
 function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to clone an invalid object")
 
@@ -635,8 +614,7 @@ end
 ---@param sKey string @The key to set the value on
 ---@param xValue any @The value to set
 ---@param bBroadcast? boolean @Server: Whether to broadcast the value change, Client: Mark the value as broadcasted
----@return boolean|nil @Return true if the value was set, nil otherwise
----
+---@return boolean? @Return true if the value was set, nil otherwise
 function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
 	assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
@@ -694,7 +672,6 @@ end
 ---@param sKey string @The key to get the value from
 ---@param xFallback? any @Fallback value (if the instance or the key doesn't exist)
 ---@return any @Value
----
 function ClassLib.GetValue(oInstance, sKey, xFallback)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to get a value from an invalid object")
 
@@ -717,7 +694,6 @@ end
 ---@param oInstance table @The instance to get the values from
 ---@param bBroadcastedOnly? boolean @Whether to only get broadcasted values
 ---@return table @Table with the key as key and the value as value
----
 function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
 	assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to get all values from an invalid object")
 
@@ -736,7 +712,6 @@ end
 ---@param xClass any @The value to check
 ---@return boolean @Whether the value is a ClassLib class
 ---@see ClassLib.IsClassLibInstance
----
 function ClassLib.IsClassLibClass(xClass)
 	if (type(xClass) ~= "table") then return false end
 
@@ -749,7 +724,6 @@ end
 ---@param xInstance any @The value to check
 ---@return boolean @Whether the value is a ClassLib instance
 ---@see ClassLib.IsClassLibClass
----
 function ClassLib.IsClassLibInstance(xInstance)
 	if (type(xInstance) ~= "table") then return false end
 
@@ -766,7 +740,6 @@ if Server then
 	---@param oInstance table @The instance to check
 	---@param sKey string @The key to check
 	---@return boolean @Whether the key is broadcasted
-	---
 	function ClassLib.IsValueBroadcasted(oInstance, sKey)
 		assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to check if a value is broadcasted from an invalid object")
 
@@ -778,8 +751,7 @@ if Server then
 	---`🔹 Server`<br>
 	---Internal function to sync the creation of an instance, you shouldn't call this directly
 	---@param oInstance table @The instance to sync
-	---@param pPlayer Player|nil @The player to send the sync to, nil to broadcast to all players
-	---
+	---@param pPlayer Player? @The player to send the sync to, nil to broadcast to all players
 	function ClassLib.SyncInstanceConstruct(oInstance, pPlayer)
 		assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the construction of an invalid object")
 
@@ -806,7 +778,6 @@ if Server then
 	---Internal function to sync all instances of a class, you shouldn't call this directly
 	---@param sClass string @The class to sync
 	---@param pPlayer Player @The player to send the sync to
-	---
 	function ClassLib.SyncAllClassInstances(sClass, pPlayer)
 		assert((tClassesMap[sClass] ~= nil), "[ClassLib] Attempt to sync all instances of an invalid class")
 		assert((getmetatable(pPlayer) == Player), "[ClassLib] Attempt to sync all instances to an invalid player")
@@ -841,7 +812,6 @@ if Server then
 	---`🔹 Server`<br>
 	---Internal function to sync the destruction of an instance (to all players), you shouldn't call this directly
 	---@param oInstance table @The instance to sync
-	---
 	function ClassLib.SyncInstanceDestroy(oInstance)
 		assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the destruction of an invalid object")
 
@@ -852,7 +822,6 @@ if Server then
 		)
 	end
 
-	-- Old "SyncAll" event
 	Player.Subscribe("Ready", function(pPlayer)
 		for sClass, oClass in pairs(tClassesMap) do
 			local tClassMT = getmetatable(oClass)
@@ -876,7 +845,6 @@ if Server then
 end
 
 if Client then
-	-- Net Event: "ClassLib:Constructor"
 	Events.SubscribeRemote(tEventsMap["ClassLib:Constructor"], function(sClassName, iID, tBroadcastedValues)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
@@ -888,7 +856,6 @@ if Client then
 		end
 	end)
 
-	-- Net Event: "ClassLib:Destructor"
 	Events.SubscribeRemote(tEventsMap["ClassLib:Destructor"], function(sClassName, iID)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
@@ -896,7 +863,6 @@ if Client then
 		ClassLib.Destroy(tClass.GetByID(iID))
 	end)
 
-	-- Net Event: "ClassLib:SetValue"
 	Events.SubscribeRemote(tEventsMap["ClassLib:SetValue"], function(sClassName, iID, sKey, xValue)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
@@ -907,7 +873,6 @@ if Client then
 		ClassLib.SetValue(oInstance, sKey, xValue, true)
 	end)
 
-	-- Net Event: "ClassLib:SyncAllClassInstances"
 	Events.SubscribeRemote(tEventsMap["ClassLib:SyncAllClassInstances"], function(sClassName, tInstances)
 		local tClass = ClassLib.GetClassByName(sClassName)
 		if not tClass then return end
