@@ -8,12 +8,12 @@ ClassLib = {}
 
 local tClassesMap = {}
 local tEventsMap = {
-	["ClassLib:Constructor"] = "C0",
-	["ClassLib:Destructor"] = "C1",
-	["ClassLib:SetValue"] = "C2",
-	["ClassLib:CLToSV"] = "C3",
-	["ClassLib:SVToCL"] = "C4",
-	["ClassLib:SyncAllClassInstances"] = "C5",
+	["ClassLib:Constructor"] = "%0",
+	["ClassLib:Destructor"] = "%1",
+	["ClassLib:SetValue"] = "%2",
+	["ClassLib:CLToSV"] = "%3",
+	["ClassLib:SVToCL"] = "%4",
+	["ClassLib:SyncAllClassInstances"] = "%5",
 }
 
 local tCopyFromParentClassOnInherit = {
