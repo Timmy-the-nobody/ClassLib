@@ -308,4 +308,18 @@ if Server then
     function BaseClass:IsValueBroadcasted(sKey)
         return ClassLib.IsValueBroadcasted(self, sKey)
     end
+
+    ---`🔹 Server`<br>
+	---Gets the players to replicate an instance to
+	---@return table<Player> @The players to replicate the instance to
+    function BaseClass:GetReplicatedPlayers()
+        return ClassLib.GetReplicatedPlayers(self)
+    end
+
+	---`🔹 Server`<br>
+	---Sets the players to replicate an instance to
+	---@param xPlayers Player|table<Player>|nil @The players to replicate the instance to
+    function BaseClass:SetReplicatedPlayers(xPlayers)
+        return ClassLib.SetReplicatedPlayers(self, xPlayers)
+    end
 end
