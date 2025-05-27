@@ -866,6 +866,9 @@ if Server then
 		tMT.__replicated_players[pPly] = {sync_values = {}}
 
 		ClassLib.SyncInstanceConstruct(oInstance, pPly)
+
+		ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, true)
+		ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, true)
 		return true
 	end
 
@@ -886,6 +889,9 @@ if Server then
 		if ClassLib.GetDestroyForUnsynced(oInstance) then
 			ClassLib.SyncInstanceDestroy(oInstance, pPly)
 		end
+
+		ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
+		ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, false)
 		return true
 	end
 

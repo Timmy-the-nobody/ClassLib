@@ -184,6 +184,7 @@ end
 ---@overload fun(self: BaseClass, sEvent: "Destroy", callback: fun(self: BaseClass))
 ---@overload fun(self: BaseClass, sEvent: "ValueChange", callback: fun(self: BaseClass, sKey: string, xValue: any))
 ---@overload fun(self: BaseClass, sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
+---@overload fun(self: BaseClass, sEvent: "ReplicatedPlayerChange", callback: fun(oInheritedClass: table, oPlayer: Player, bAdded: boolean))
 ---@return function? @The callback
 function BaseClass.ClassSubscribe(sEvent, callback)
     return ClassLib.Subscribe(BaseClass, sEvent, callback)
@@ -318,7 +319,7 @@ if Server then
 
 	---`🔹 Server`<br>
 	---Sets the players to replicate the instance to
-	---@param xPlayers Player|table<Player>|nil @The players to replicate the instance to
+	---@param xPlayers table<Player>|nil @The players to replicate the instance to
     function BaseClass:SetReplicatedPlayers(xPlayers)
         return ClassLib.SetReplicatedPlayers(self, xPlayers)
     end
