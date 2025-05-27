@@ -33,12 +33,12 @@ function BaseClass:Destroy(...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Called after an instance is created
+---Called after the instance is created
 function BaseClass:Constructor()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Called when an instance is about to be destroyed, return `false` to cancel the destruction
+---Called when the instance is about to be destroyed, return `false` to cancel the destruction
 function BaseClass:Destructor()
 end
 
@@ -128,7 +128,7 @@ function BaseClass.GetCount()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns an instance of this class from the instance unique ID
+---Returns the instance of this class from the instance unique ID
 ---@param iID integer @The ID of the instance
 ---@return table? @The instance, or nil if it doesn't exist
 function BaseClass.GetByID(iID)
@@ -159,7 +159,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
----@param bSync? boolean @Whether to sync the creation/destruction of an instance of the class and it's broadcasted values to all players
+---@param bSync? boolean @Whether to sync the creation/destruction of the instance of the class and it's broadcasted values to all players
 ---@return table @The new class
 function BaseClass.Inherit(sClassName, bSync)
     return ClassLib.Inherit(BaseClass, sClassName, bSync)
@@ -310,28 +310,52 @@ if Server then
     end
 
     ---`🔹 Server`<br>
-	---Gets the players to replicate an instance to
+	---Gets the players to replicate the instance to
 	---@return table<Player> @The players to replicate the instance to
     function BaseClass:GetReplicatedPlayers()
         return ClassLib.GetReplicatedPlayers(self)
     end
 
 	---`🔹 Server`<br>
-	---Sets the players to replicate an instance to
+	---Sets the players to replicate the instance to
 	---@param xPlayers Player|table<Player>|nil @The players to replicate the instance to
     function BaseClass:SetReplicatedPlayers(xPlayers)
         return ClassLib.SetReplicatedPlayers(self, xPlayers)
     end
 
     ---`🔹 Server`<br>
-    ---Returns wether an instance should be destroyed on the clientside when the player is unsynced
+    ---Adds a player to replicate the instance to
+    ---@param xPlayer Player @The player to replicate the instance to
+    ---@return boolean @Whether the player was added
+    function BaseClass:AddReplicatedPlayer(xPlayer)
+        return ClassLib.AddReplicatedPlayer(self, xPlayer)
+    end
+
+    ---`🔹 Server`<br>
+    ---Removes a player from replicating the instance to
+    ---@param xPlayer Player @The player to remove
+    ---@return boolean @Whether the player was removed
+    function BaseClass:RemoveReplicatedPlayer(xPlayer)
+        return ClassLib.RemoveReplicatedPlayer(self, xPlayer)
+    end
+
+    ---`🔹 Server`<br>
+    ---Returns wether a player is replicating the instance
+    ---@param xPlayer Player @The player to check
+    ---@return boolean @Whether the player is replicating the instance
+    function BaseClass:IsPlayerReplicated(xPlayer)
+        return ClassLib.IsPlayerReplicated(self, xPlayer)
+    end
+
+    ---`🔹 Server`<br>
+    ---Returns wether the instance should be destroyed on the clientside when the player is unsynced
     ---@return boolean @Whether the instance should be destroyed
     function BaseClass:GetDestroyForUnsynced()
         return ClassLib.GetDestroyForUnsynced(self)
     end
 
     ---`🔹 Server`<br>
-    ---Sets wether an instance should be destroyed on the clientside when the player is unsynced
+    ---Sets wether the instance should be destroyed on the clientside when the player is unsynced
     ---@param bDestroy boolean @Whether the instance should be destroyed
     function BaseClass:SetDestroyForUnsynced(bDestroy)
         return ClassLib.SetDestroyForUnsynced(self, bDestroy)
