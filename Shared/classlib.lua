@@ -551,10 +551,8 @@ function ClassLib.Destroy(oInstance, ...)
 		if tClassMT.__broadcast_destruction then
 			ClassLib.SyncInstanceDestroy(oInstance)
 		else
-			if (#tMT.__replicated_players > 0) then
-				for _, pPly in ipairs(tMT.__replicated_players) do
-					ClassLib.SyncInstanceDestroy(oInstance, pPly)
-				end
+			for pPly in pairs(tMT.__replicated_players) do
+				ClassLib.SyncInstanceDestroy(oInstance, pPly)
 			end
 		end
 	end
@@ -662,12 +660,17 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
 				Events.BroadcastRemote(tEvMap.SetValue, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
 			end
 		else
-			if tMT.__replicated_players then
-				for _, pPly in ipairs(tMT.__replicated_players) do
-					if pPly:IsValid() then
-						Events.CallRemote(tEvMap.SetValue, pPly, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
-					end
+			for pPly, tInfo in pairs(tMT.__replicated_players) do
+				if not pPly:IsValid() then goto continue end
+				PrintTable(tInfo.sync_values)
+				if (tInfo.sync_values[sKey] == xValue) then
+					print("value havn't changed")
+					goto continue
 				end
+
+				Events.CallRemote(tEvMap.SetValue, pPly, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
+				tMT.__replicated_players[pPly].sync_values[sKey] = xValue
+				::continue::
 			end
 		end
 	end
@@ -820,15 +823,13 @@ if Server then
 	function ClassLib.SyncInstanceDestroy(oInstance, pPlayer)
 		assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the destruction of an invalid object")
 
-		if pPlayer then
-			if (getmetatable(pPlayer) == Player) then
-				Events.CallRemote(tEvMap.Destructor, pPlayer, oInstance:GetClassName(), oInstance:GetID())
-				return
-			end
+		if not pPlayer then
+			Events.BroadcastRemote(tEvMap.Destructor, oInstance:GetClassName(), oInstance:GetID())
 			return
 		end
 
-		Events.BroadcastRemote(tEvMap.Destructor, oInstance:GetClassName(), oInstance:GetID())
+		if (getmetatable(pPlayer) ~= Player) then return end
+		Events.CallRemote(tEvMap.Destructor, pPlayer, oInstance:GetClassName(), oInstance:GetID())
 	end
 
 	---`🔹 Server`<br>
@@ -850,14 +851,69 @@ if Server then
 	end
 
 	---`🔹 Server`<br>
+	---Adds a player to replicate an instance to
+	---@param oInstance table @The instance to add the player to
+	---@param pPly Player @The player to add
+	---@return boolean @Whether the player was added
+	---@see ClassLib.RemoveReplicatedPlayer
+	---@see ClassLib.GetReplicatedPlayers
+	---@see ClassLib.SetReplicatedPlayers
+	function ClassLib.AddReplicatedPlayer(oInstance, pPly)
+		if ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
+		if (getmetatable(pPly) ~= Player) or not pPly:IsValid() then return false end
+
+		local tMT = getmetatable(oInstance)
+		tMT.__replicated_players[pPly] = {sync_values = {}}
+
+		ClassLib.SyncInstanceConstruct(oInstance, pPly)
+		return true
+	end
+
+	---`🔹 Server`<br>
+	---Removes a player from replicating an instance to
+	---@param oInstance table @The instance to remove the player from
+	---@param pPly Player @The player to remove
+	---@return boolean @Whether the player was removed
+	---@see ClassLib.AddReplicatedPlayer
+	---@see ClassLib.GetReplicatedPlayers
+	---@see ClassLib.SetReplicatedPlayers
+	function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
+		if not ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
+
+		local tMT = getmetatable(oInstance)
+		tMT.__replicated_players[pPly] = nil
+
+		if ClassLib.GetDestroyForUnsynced(oInstance) then
+			ClassLib.SyncInstanceDestroy(oInstance, pPly)
+		end
+		return true
+	end
+
+	---`🔹 Server`<br>
 	---Gets the players to replicate an instance to
 	---@param oInstance table @The instance to get
 	---@return table<Player> @The players to replicate the instance to
+	---@see ClassLib.AddReplicatedPlayer
+	---@see ClassLib.RemoveReplicatedPlayer
+	---@see ClassLib.GetReplicatedPlayers
+	---@see ClassLib.SetReplicatedPlayers
 	function ClassLib.GetReplicatedPlayers(oInstance)
-		if not ClassLib.IsClassLibInstance(oInstance) then return {} end
-
 		local tMT = getmetatable(oInstance)
-		return tMT.__replicated_players
+		if not tMT then return {} end
+
+		return tMT.__replicated_players or {}
+	end
+
+	---`🔹 Server`<br>
+	---Checks if a player is replicating an instance
+	---@param oInstance table @The instance to check
+	---@param pPly Player @The player to check
+	---@return boolean @Whether the player is replicating the instance
+	function ClassLib.IsPlayerReplicated(oInstance, pPly)
+		local tMT = getmetatable(oInstance)
+		if not tMT or not tMT.__replicated_players then return false end
+
+		return tMT.__replicated_players[pPly] and true or false
 	end
 
 	---`🔹 Server`<br>
@@ -868,45 +924,25 @@ if Server then
 		if not ClassLib.IsClassLibInstance(oInstance) then return end
 
 		local tMT = getmetatable(oInstance)
-		local tOldList, tOldMap = tMT.__replicated_players or {}, {}
-		for _, ply in ipairs(tOldList) do
-			tOldMap[ply] = true
+		if (type(xPlayers) ~= "table") then
+			tMT.__replicated_players = {}
+			return
 		end
 
-		local tNewList, tNewMap = {}, {}
-		local function addPlayer(pPly)
-			if (getmetatable(pPly) == Player) and pPly:IsValid() and not tNewMap[pPly] then
+		local tOldMap = tMT.__replicated_players
+		local tNewMap = {}
+
+		for _, pPly in ipairs(xPlayers) do
+			if (getmetatable(pPly) == Player) and pPly:IsValid() then
+				ClassLib.AddReplicatedPlayer(oInstance, pPly)
 				tNewMap[pPly] = true
-				tNewList[#tNewList + 1] = pPly
 			end
 		end
 
-		if (getmetatable(xPlayers) == Player) then
-			addPlayer(xPlayers)
-		elseif (type(xPlayers) == "table") then
-			for _, pPly in ipairs(xPlayers) do addPlayer(pPly) end
-		end
-
-		local tAdded, tRemoved, tUnchanged = {}, {}, {}
-		for _, pPly in ipairs(tOldList) do
+		for pPly, _ in pairs(tOldMap) do
 			if not tNewMap[pPly] then
-				tRemoved[#tRemoved + 1] = pPly
-			else
-				tUnchanged[#tUnchanged + 1] = pPly
+				ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
 			end
-		end
-		for _, pPly in ipairs(tNewList) do
-			if not tOldMap[pPly] then
-				tAdded[#tAdded + 1] = pPly
-			end
-		end
-
-		tMT.__replicated_players = tNewList
-
-		for _, pPly in ipairs(tAdded) do ClassLib.SyncInstanceConstruct(oInstance, pPly) end
-
-		if ClassLib.GetDestroyForUnsynced(oInstance) then
-			for _, pPly in ipairs(tRemoved) do ClassLib.SyncInstanceDestroy(oInstance, pPly) end
 		end
 	end
 
