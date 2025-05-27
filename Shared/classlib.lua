@@ -492,6 +492,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
 	tNewMT.__values = {}
 	tNewMT.__broadcasted_values = {}
 	tNewMT.__replicated_players = {}
+	tNewMT.__destroy_for_unsynced = true
 	tNewMT.__classlib_instance = true
 
 	local oInstance = setmetatable({}, tNewMT)
@@ -546,8 +547,6 @@ function ClassLib.Destroy(oInstance, ...)
 	tClassMT.__instances = tNewList
 	tClassMT.__instances_map[oInstance:GetID()] = nil
 
-	-- if tClassMT.__broadcast_creation and Server then
-
 	if Server then
 		if tClassMT.__broadcast_destruction then
 			ClassLib.SyncInstanceDestroy(oInstance)
@@ -564,8 +563,6 @@ function ClassLib.Destroy(oInstance, ...)
 	tMT.__is_valid = nil
 	tMT.__is_being_destroyed = nil
 
-	-- function tMT:__call() error("[ClassLib] Attempt to access a destroyed object") end
-	-- function tMT:__index() error("[ClassLib] Attempt to access a destroyed object") end
 	function tMT:__newindex() error("[ClassLib] Attempt to set a value on a destroyed object") end
 end
 
@@ -835,6 +832,24 @@ if Server then
 	end
 
 	---`🔹 Server`<br>
+    ---Returns wether an instance should be destroyed on the clientside when the player is unsynced
+	---@param oInstance table @The instance to get
+    ---@return boolean @Whether the instance should be destroyed
+	function ClassLib.GetDestroyForUnsynced(oInstance)
+		local tMT = getmetatable(oInstance)
+		return tMT.__destroy_for_unsynced
+	end
+
+	---`🔹 Server`<br>
+    ---Sets wether an instance should be destroyed on the clientside when the player is unsynced
+	---@param oInstance table @The instance to set
+    ---@param bDestroy boolean @Whether the instance should be destroyed
+	function ClassLib.SetDestroyForUnsynced(oInstance, bDestroy)
+		local tMT = getmetatable(oInstance)
+		tMT.__destroy_for_unsynced = bDestroy
+	end
+
+	---`🔹 Server`<br>
 	---Gets the players to replicate an instance to
 	---@param oInstance table @The instance to get
 	---@return table<Player> @The players to replicate the instance to
@@ -889,7 +904,10 @@ if Server then
 		tMT.__replicated_players = tNewList
 
 		for _, pPly in ipairs(tAdded) do ClassLib.SyncInstanceConstruct(oInstance, pPly) end
-		for _, pPly in ipairs(tRemoved) do ClassLib.SyncInstanceDestroy(oInstance, pPly) end
+
+		if ClassLib.GetDestroyForUnsynced(oInstance) then
+			for _, pPly in ipairs(tRemoved) do ClassLib.SyncInstanceDestroy(oInstance, pPly) end
+		end
 	end
 
 	Player.Subscribe("Ready", function(pPly)
