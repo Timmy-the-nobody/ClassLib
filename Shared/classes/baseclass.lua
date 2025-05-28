@@ -353,18 +353,4 @@ if Server then
     function BaseClass:IsPlayerReplicated(xPlayer)
         return ClassLib.IsPlayerReplicated(self, xPlayer)
     end
-
-    ---`🔹 Server`<br>
-    ---Returns wether the instance should be destroyed on the clientside when the player is unsynced
-    ---@return boolean @Whether the instance should be destroyed
-    function BaseClass:GetDestroyForUnsynced()
-        return ClassLib.GetDestroyForUnsynced(self)
-    end
-
-    ---`🔹 Server`<br>
-    ---Sets wether the instance should be destroyed on the clientside when the player is unsynced
-    ---@param bDestroy boolean @Whether the instance should be destroyed
-    function BaseClass:SetDestroyForUnsynced(bDestroy)
-        return ClassLib.SetDestroyForUnsynced(self, bDestroy)
-    end
 end
