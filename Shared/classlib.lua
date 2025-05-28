@@ -481,6 +481,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
     tNewMT.__instances = {}
     tNewMT.__instances_map = {}
     tNewMT.__next_id = 1
+    tNewMT.__next_client_id = -1
     tNewMT.__broadcast_creation = bSync
     tNewMT.__inherited_classes = {}
     tNewMT.__classlib_class = true
@@ -556,9 +557,18 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
     tNewMT.__classlib_instance = true
 
     local oInstance = setmetatable({}, tNewMT)
-    ClassLib.SetValue(oInstance, "id", iForcedID or tClassMT.__next_id)
+    local iID = iForcedID
+    if not iID then
+        if Client then
+            iID = tClassMT.__next_client_id
+            tClassMT.__next_client_id = (tClassMT.__next_client_id - 1)
+        else
+            iID = tClassMT.__next_id
+            tClassMT.__next_id = (tClassMT.__next_id + 1)
+        end
+    end
 
-    tClassMT.__next_id = (tClassMT.__next_id + 1)
+    ClassLib.SetValue(oInstance, "id", iID)
     tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
 
     if rawget(oClass, "Constructor") then
@@ -877,93 +887,14 @@ if Server then
     end
 
     ---`🔹 Server`<br>
-    ---Returns wether an instance should be destroyed on the clientside when the player is unsynced
-    ---@param oInstance table @The instance to get
-    ---@return boolean @Whether the instance should be destroyed
-    function ClassLib.GetDestroyForUnsynced(oInstance)
-        local tMT = getmetatable(oInstance)
-        return tMT.__destroy_for_unsynced
-    end
-
-    ---`🔹 Server`<br>
-    ---Sets wether an instance should be destroyed on the clientside when the player is unsynced
-    ---@param oInstance table @The instance to set
-    ---@param bDestroy boolean @Whether the instance should be destroyed
-    function ClassLib.SetDestroyForUnsynced(oInstance, bDestroy)
-        local tMT = getmetatable(oInstance)
-        tMT.__destroy_for_unsynced = bDestroy
-    end
-
-    ---`🔹 Server`<br>
-    ---Adds a player to replicate an instance to
-    ---@param oInstance table @The instance to add the player to
-    ---@param pPly Player @The player to add
-    ---@return boolean @Whether the player was added
-    ---@see ClassLib.RemoveReplicatedPlayer
-    ---@see ClassLib.GetReplicatedPlayers
-    ---@see ClassLib.SetReplicatedPlayers
-    function ClassLib.AddReplicatedPlayer(oInstance, pPly)
-        if ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
-        if (getmetatable(pPly) ~= Player) or not pPly:IsValid() then return false end
-
-        local tMT = getmetatable(oInstance)
-        tMT.__replicated_players[pPly] = { sync_values = {} }
-
-        ClassLib.SyncInstanceConstruct(oInstance, pPly)
-
-        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, true)
-        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, true)
-        return true
-    end
-
-    ---`🔹 Server`<br>
-    ---Removes a player from replicating an instance to
-    ---@param oInstance table @The instance to remove the player from
-    ---@param pPly Player @The player to remove
-    ---@return boolean @Whether the player was removed
-    ---@see ClassLib.AddReplicatedPlayer
-    ---@see ClassLib.GetReplicatedPlayers
-    ---@see ClassLib.SetReplicatedPlayers
-    function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
-        if not ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
-
-        local tMT = getmetatable(oInstance)
-        tMT.__replicated_players[pPly] = nil
-
-        if ClassLib.GetDestroyForUnsynced(oInstance) then
-            ClassLib.SyncInstanceDestroy(oInstance, pPly)
-        end
-
-        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
-        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, false)
-        return true
-    end
-
-    ---`🔹 Server`<br>
     ---Gets the players to replicate an instance to
     ---@param oInstance table @The instance to get
     ---@return table<Player> @The players to replicate the instance to
-    ---@see ClassLib.AddReplicatedPlayer
-    ---@see ClassLib.RemoveReplicatedPlayer
-    ---@see ClassLib.GetReplicatedPlayers
-    ---@see ClassLib.SetReplicatedPlayers
     function ClassLib.GetReplicatedPlayers(oInstance)
         local tMT = getmetatable(oInstance)
         if not tMT then return {} end
 
         return tMT.__replicated_players or {}
-    end
-
-    ---`🔹 Server`<br>
-    ---Checks if a player is replicating an instance
-    ---@param oInstance table @The instance to check
-    ---@param pPly Player @The player to check
-    ---@return boolean @Whether the player is replicating the instance
-    function ClassLib.IsPlayerReplicated(oInstance, pPly)
-        local tMT = getmetatable(oInstance)
-        if not tMT or not tMT.__replicated_players then return false end
-
-        return tMT.__replicated_players[pPly] and true or false
     end
 
     ---`🔹 Server`<br>
@@ -996,6 +927,55 @@ if Server then
         end
     end
 
+    ---`🔹 Server`<br>
+    ---Adds a player to replicate an instance to
+    ---@param oInstance table @The instance to add the player to
+    ---@param pPly Player @The player to add
+    ---@return boolean @Whether the player was added
+    function ClassLib.AddReplicatedPlayer(oInstance, pPly)
+        if ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
+        if (getmetatable(pPly) ~= Player) or not pPly:IsValid() then return false end
+
+        local tMT = getmetatable(oInstance)
+        tMT.__replicated_players[pPly] = { sync_values = {} }
+
+        ClassLib.SyncInstanceConstruct(oInstance, pPly)
+
+        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, true)
+        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, true)
+        return true
+    end
+
+    ---`🔹 Server`<br>
+    ---Removes a player from replicating an instance to
+    ---@param oInstance table @The instance to remove the player from
+    ---@param pPly Player @The player to remove
+    ---@return boolean @Whether the player was removed
+    function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
+        if not ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
+
+        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
+        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, false)
+
+        local tMT = getmetatable(oInstance)
+        tMT.__replicated_players[pPly] = nil
+
+        ClassLib.SyncInstanceDestroy(oInstance, pPly)
+        return true
+    end
+
+    ---`🔹 Server`<br>
+    ---Checks if a player is replicating an instance
+    ---@param oInstance table @The instance to check
+    ---@param pPly Player @The player to check
+    ---@return boolean @Whether the player is replicating the instance
+    function ClassLib.IsPlayerReplicated(oInstance, pPly)
+        local tMT = getmetatable(oInstance)
+        if not tMT or not tMT.__replicated_players then return false end
+
+        return tMT.__replicated_players[pPly] and true or false
+    end
+
     Player.Subscribe("Ready", function(pPly)
         for sClass, oClass in pairs(tClassesMap) do
             local tClassMT = getmetatable(oClass)
@@ -1024,7 +1004,8 @@ if Client then
     ---@param oInstance table @The instance to check
     ---@return boolean @false if it was spawned by the server, true if it was spawned by the client
     function ClassLib.HasAuthority(oInstance)
-        return getmetatable(oInstance).__server_authority and false or true
+        if (type(oInstance) ~= "table") or not oInstance.GetID then return false end
+        return (oInstance:GetID() > 0)
     end
 
     Events.SubscribeRemote(tEvMap.Constructor, function(sClassName, iID, tBroadcastedValues)
@@ -1032,7 +1013,6 @@ if Client then
         if not tClass then return end
 
         local oInstance = ClassLib.NewInstance(tClass, iID)
-        getmetatable(oInstance).__server_authority = true
 
         for sKey, xValue in pairs(tBroadcastedValues) do
             ClassLib.SetValue(oInstance, sKey, xValue, true)
