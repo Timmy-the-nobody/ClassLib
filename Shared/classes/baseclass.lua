@@ -249,6 +249,13 @@ end
 
 if Client then
     ---`🔸 Client`<br>
+    ---Returns wether the instance was spawned on the client side
+    ---@return boolean @false if it was spawned by the server, true if it was spawned by the client
+    function BaseClass:HasAuthority()
+        return ClassLib.HasAuthority(self)
+    end
+
+    ---`🔸 Client`<br>
     ---Calls a remote event from the client to the server
     ---@param sEvent string @The name of the event to call
     ---@param ... any @The arguments to pass to the event

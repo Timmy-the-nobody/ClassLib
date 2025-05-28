@@ -252,6 +252,7 @@ end
 
 local function serializeValue(v)
     if ClassLib.IsClassLibInstance(v) then
+        if Client and ClassLib.HasAuthority(v) then return end
         return { __classlib = true, c = v:GetClassName(), i = v:GetID() }
     elseif (type(v) == "table") then
         local tRes = {}
@@ -334,6 +335,7 @@ if Client then
             for _, callback in ipairs(tRemoteEvents[sEvent]) do
                 callback(self, table.unpack(tArgs))
             end
+
             return false
         end)
     end)
@@ -748,14 +750,8 @@ function ClassLib.GetValue(oInstance, sKey, xFallback)
     local tMT = getmetatable(oInstance)
     if not tMT then return xFallback end
 
-    if (tMT.__values[sKey] ~= nil) then
-        return tMT.__values[sKey]
-    end
-
-    if (oInstance[sKey] ~= nil) then
-        return oInstance[sKey]
-    end
-
+    if (tMT.__values[sKey] ~= nil) then return tMT.__values[sKey] end
+    if (oInstance[sKey] ~= nil) then return oInstance[sKey] end
     return xFallback
 end
 
@@ -770,10 +766,7 @@ function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
     local tMT = getmetatable(oInstance)
     if not tMT then return {} end
 
-    if bBroadcastedOnly then
-        return tMT.__broadcasted_values
-    end
-
+    if bBroadcastedOnly then return tMT.__broadcasted_values end
     return tMT.__values
 end
 
@@ -811,13 +804,42 @@ if Server then
     ---@param sKey string @The key to check
     ---@return boolean @Whether the key is broadcasted
     function ClassLib.IsValueBroadcasted(oInstance, sKey)
-        assert(ClassLib.IsValid(oInstance),
-            "[ClassLib] Attempt to check if a value is broadcasted from an invalid object")
+        assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to check if a value is broadcasted from an invalid object")
 
         local tMT = getmetatable(oInstance)
         if not tMT then return false end
         return tMT.__broadcasted_values[sKey] ~= nil
     end
+
+    -- ---`🔹 Server`<br>
+    -- ---Internal function to sync all instances of a class, you shouldn't call this directly
+    -- ---@param sClass string @The class to sync
+    -- ---@param pPly Player @The player to send the sync to
+    -- function ClassLib.SyncAllClassInstances(sClass, pPly)
+    --     assert((tClassesMap[sClass] ~= nil), "[ClassLib] Attempt to sync all instances of an invalid class")
+    --     assert((getmetatable(pPly) == Player), "[ClassLib] Attempt to sync all instances to an invalid player")
+
+    --     local tClass = tClassesMap[sClass]
+    --     local tClassMT = getmetatable(tClass)
+
+    --     if not tClassMT.__broadcast_creation then return end
+    --     if (#tClassMT.__instances == 0) then return end
+
+    --     local tSyncObjs = {}
+    --     for _, oInstance in ipairs(tClassMT.__instances) do
+    --         if not oInstance:IsValid() then goto continue end
+    --         if oInstance:IsBeingDestroyed() then goto continue end
+
+    --         tSyncObjs[#tSyncObjs + 1] = {
+    --             oInstance:GetID(),
+    --             getmetatable(oInstance).__broadcasted_values
+    --         }
+
+    --         ::continue::
+    --     end
+
+    --     Events.CallRemote(tEvMap.SyncAllClassInstances, pPly, sClass, tSyncObjs)
+    -- end
 
     ---`🔹 Server`<br>
     ---Internal function to sync the creation of an instance, you shouldn't call this directly
@@ -826,69 +848,32 @@ if Server then
     function ClassLib.SyncInstanceConstruct(oInstance, pPly)
         assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the construction of an invalid object")
 
+        local sClass = oInstance:GetClassName()
+        local iID = oInstance:GetID()
+        local tValues = getmetatable(oInstance).__broadcasted_values
+
         if (getmetatable(pPly) == Player) then
-            Events.CallRemote(
-                tEvMap.Constructor,
-                pPly,
-                oInstance:GetClassName(),
-                oInstance:GetID(),
-                getmetatable(oInstance).__broadcasted_values
-            )
-            return
+            Events.CallRemote(tEvMap.Constructor, pPly, sClass, iID, tValues)
+        else
+            Events.BroadcastRemote(tEvMap.Constructor, sClass, iID, tValues)
         end
-
-        Events.BroadcastRemote(
-            tEvMap.Constructor,
-            oInstance:GetClassName(),
-            oInstance:GetID(),
-            getmetatable(oInstance).__broadcasted_values
-        )
-    end
-
-    ---`🔹 Server`<br>
-    ---Internal function to sync all instances of a class, you shouldn't call this directly
-    ---@param sClass string @The class to sync
-    ---@param pPly Player @The player to send the sync to
-    function ClassLib.SyncAllClassInstances(sClass, pPly)
-        assert((tClassesMap[sClass] ~= nil), "[ClassLib] Attempt to sync all instances of an invalid class")
-        assert((getmetatable(pPly) == Player), "[ClassLib] Attempt to sync all instances to an invalid player")
-
-        local tClass = tClassesMap[sClass]
-        local tClassMT = getmetatable(tClass)
-
-        if not tClassMT.__broadcast_creation then return end
-        if (#tClassMT.__instances == 0) then return end
-
-        local tSyncObjs = {}
-        for _, oInstance in ipairs(tClassMT.__instances) do
-            if not oInstance:IsValid() then goto continue end
-            if oInstance:IsBeingDestroyed() then goto continue end
-
-            tSyncObjs[#tSyncObjs + 1] = {
-                oInstance:GetID(),
-                getmetatable(oInstance).__broadcasted_values
-            }
-
-            ::continue::
-        end
-
-        Events.CallRemote(tEvMap.SyncAllClassInstances, pPly, sClass, tSyncObjs)
     end
 
     ---`🔹 Server`<br>
     ---Internal function to sync the destruction of an instance (to all players), you shouldn't call this directly
     ---@param oInstance table @The instance to sync
-    ---@param pPlayer Player? @The player to send the sync to, nil to broadcast to all players
-    function ClassLib.SyncInstanceDestroy(oInstance, pPlayer)
+    ---@param pPly Player? @The player to send the sync to, nil to broadcast to all players
+    function ClassLib.SyncInstanceDestroy(oInstance, pPly)
         assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the destruction of an invalid object")
 
-        if not pPlayer then
-            Events.BroadcastRemote(tEvMap.Destructor, oInstance:GetClassName(), oInstance:GetID())
-            return
-        end
+        local sClass = oInstance:GetClassName()
+        local iID = oInstance:GetID()
 
-        if (getmetatable(pPlayer) ~= Player) then return end
-        Events.CallRemote(tEvMap.Destructor, pPlayer, oInstance:GetClassName(), oInstance:GetID())
+        if (getmetatable(pPly) == Player) then
+            Events.CallRemote(tEvMap.Destructor, pPly, sClass, iID)
+        else
+            Events.BroadcastRemote(tEvMap.Destructor, sClass, iID)
+        end
     end
 
     ---`🔹 Server`<br>
@@ -1034,11 +1019,20 @@ if Server then
 end
 
 if Client then
+    ---`🔸 Client`<br>
+    ---Checks if the instance was spawned on the client side
+    ---@param oInstance table @The instance to check
+    ---@return boolean @false if it was spawned by the server, true if it was spawned by the client
+    function ClassLib.HasAuthority(oInstance)
+        return getmetatable(oInstance).__server_authority and false or true
+    end
+
     Events.SubscribeRemote(tEvMap.Constructor, function(sClassName, iID, tBroadcastedValues)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
         local oInstance = ClassLib.NewInstance(tClass, iID)
+        getmetatable(oInstance).__server_authority = true
 
         for sKey, xValue in pairs(tBroadcastedValues) do
             ClassLib.SetValue(oInstance, sKey, xValue, true)
@@ -1062,16 +1056,16 @@ if Client then
         ClassLib.SetValue(oInstance, sKey, xValue, true)
     end)
 
-    Events.SubscribeRemote(tEvMap.SyncAllClassInstances, function(sClassName, tInstances)
-        local tClass = ClassLib.GetClassByName(sClassName)
-        if not tClass then return end
+    -- Events.SubscribeRemote(tEvMap.SyncAllClassInstances, function(sClassName, tInstances)
+    --     local tClass = ClassLib.GetClassByName(sClassName)
+    --     if not tClass then return end
 
-        for _, tInstance in ipairs(tInstances) do
-            local oInstance = ClassLib.NewInstance(tClass, tInstance[1])
+    --     for _, tInstance in ipairs(tInstances) do
+    --         local oInstance = ClassLib.NewInstance(tClass, tInstance[1])
 
-            for sKey, xValue in pairs(tInstance[2]) do
-                ClassLib.SetValue(oInstance, sKey, xValue, true)
-            end
-        end
-    end)
+    --         for sKey, xValue in pairs(tInstance[2]) do
+    --             ClassLib.SetValue(oInstance, sKey, xValue, true)
+    --         end
+    --     end
+    -- end)
 end
