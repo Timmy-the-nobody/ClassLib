@@ -29,7 +29,7 @@ end
 ---Destroys the instance
 ---@param ... any? @Arguments to pass to the destructor
 function BaseClass:Destroy(...)
-	return ClassLib.Destroy(self, ...)
+    return ClassLib.Destroy(self, ...)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -255,7 +255,6 @@ if Client then
     function BaseClass:CallRemote(sEvent, ...)
         return ClassLib.CallRemote_Client(self, sEvent, ...)
     end
-
 elseif Server then
     ---`🔹 Server`<br>
     ---Calls a remote event from the server to the client
@@ -311,15 +310,15 @@ if Server then
     end
 
     ---`🔹 Server`<br>
-	---Gets the players to replicate the instance to
-	---@return table<Player> @The players to replicate the instance to
+    ---Gets the players to replicate the instance to
+    ---@return table<Player> @The players to replicate the instance to
     function BaseClass:GetReplicatedPlayers()
         return ClassLib.GetReplicatedPlayers(self)
     end
 
-	---`🔹 Server`<br>
-	---Sets the players to replicate the instance to
-	---@param xPlayers table<Player>|nil @The players to replicate the instance to
+    ---`🔹 Server`<br>
+    ---Sets the players to replicate the instance to
+    ---@param xPlayers table<Player>|nil @The players to replicate the instance to
     function BaseClass:SetReplicatedPlayers(xPlayers)
         return ClassLib.SetReplicatedPlayers(self, xPlayers)
     end
