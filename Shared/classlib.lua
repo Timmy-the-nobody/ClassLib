@@ -53,6 +53,51 @@ local error = error
 local assert = assert
 local rawget = rawget
 
+local function serializeValue(v)
+    if ClassLib.IsClassLibInstance(v) then
+        if Client and ClassLib.HasAuthority(v) then return end
+        return {__classlib = true, c = v:GetClassName(), i = v:GetID()}
+    elseif (type(v) == "table") then
+        local tRes = {}
+        for i, j in pairs(v) do tRes[i] = serializeValue(j) end
+        return tRes
+    else
+        return v
+    end
+end
+
+local function serializeArgs(...)
+    local tArgs, tSerialized = {...}, {}
+    for i = 1, #tArgs do
+        tSerialized[i] = serializeValue(tArgs[i])
+    end
+    return tSerialized
+end
+
+local function parseValue(v)
+    if (type(v) == "table") then
+        if v.__classlib then
+            local tClass = tClassesMap[v.c]
+            if not tClass then return end
+            return getmetatable(tClass).__instances_map[v.i]
+        else
+            local tRes = {}
+            for i, j in pairs(v) do tRes[i] = parseValue(j) end
+            return tRes
+        end
+    else
+        return v
+    end
+end
+
+local function parseArgs(...)
+    local tArgs, tParsed = {...}, {}
+    for i = 1, #tArgs do
+        tParsed[i] = parseValue(tArgs[i])
+    end
+    return tParsed
+end
+
 -- Utils
 ----------------------------------------------------------------------
 
@@ -249,51 +294,6 @@ end
 
 -- Remote Events
 ----------------------------------------------------------------------
-
-local function serializeValue(v)
-    if ClassLib.IsClassLibInstance(v) then
-        if Client and ClassLib.HasAuthority(v) then return end
-        return {__classlib = true, c = v:GetClassName(), i = v:GetID()}
-    elseif (type(v) == "table") then
-        local tRes = {}
-        for i, j in pairs(v) do tRes[i] = serializeValue(j) end
-        return tRes
-    else
-        return v
-    end
-end
-
-local function serializeArgs(...)
-    local tArgs, tSerialized = {...}, {}
-    for i = 1, #tArgs do
-        tSerialized[i] = serializeValue(tArgs[i])
-    end
-    return tSerialized
-end
-
-local function parseValue(v)
-    if (type(v) == "table") then
-        if v.__classlib then
-            local tClass = tClassesMap[v.c]
-            if not tClass then return end
-            return getmetatable(tClass).__instances_map[v.i]
-        else
-            local tRes = {}
-            for i, j in pairs(v) do tRes[i] = parseValue(j) end
-            return tRes
-        end
-    else
-        return v
-    end
-end
-
-local function parseArgs(...)
-    local tArgs, tParsed = {...}, {}
-    for i = 1, #tArgs do
-        tParsed[i] = parseValue(tArgs[i])
-    end
-    return tParsed
-end
 
 if Client then
     ---`🔸 Client`<br>
@@ -685,6 +685,8 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
     local tMT = getmetatable(oInstance)
     if not tMT then return end
 
+    xValue = serializeValue(xValue)
+
     -- Handle ID change
     if (sKey == "id") then
         assert((type(xValue) == "number"), "[ClassLib] The ID passed to ClassLib.SetValue is not a number")
@@ -719,11 +721,7 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
         else
             for pPly, tInfo in pairs(tMT.__replicated_players) do
                 if not pPly:IsValid() then goto continue end
-                PrintTable(tInfo.sync_values)
-                if (tInfo.sync_values[sKey] == xValue) then
-                    print("value havn't changed")
-                    goto continue
-                end
+                if (tInfo.sync_values[sKey] == xValue) then goto continue end
 
                 Events.CallRemote(tEvMap.SetValue, pPly, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
                 tMT.__replicated_players[pPly].sync_values[sKey] = xValue
@@ -1025,7 +1023,7 @@ if Client then
         local oInstance = tClass.GetByID(iID)
         if not oInstance then return end
 
-        ClassLib.SetValue(oInstance, sKey, xValue, true)
+        ClassLib.SetValue(oInstance, sKey, parseValue(xValue), true)
     end)
 
     -- Events.SubscribeRemote(tEvMap.SyncAllClassInstances, function(sClassName, tInstances)
