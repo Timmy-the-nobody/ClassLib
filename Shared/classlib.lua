@@ -199,9 +199,9 @@ function ClassLib.Call(oInput, sEvent, ...)
     local tEvents = tMT.__events
 
     if tEvents and tEvents[sEvent] then
-        for _, callback in ipairs(tEvents[sEvent]) do
-            if (callback(...) == false) then
-                ClassLib.Unsubscribe(oInput, sEvent, callback)
+        for _, fnCallback in ipairs(tEvents[sEvent]) do
+            if (fnCallback(...) == false) then
+                ClassLib.Unsubscribe(oInput, sEvent, fnCallback)
             end
         end
     end
@@ -211,35 +211,35 @@ end
 ---Subscribes to an Event
 ---@param oInput table @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
----@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
+---@param fnCallback function @The callback to call when the event is triggered, return false to unsubscribe from the event
 ---@return function? @The callback
-function ClassLib.Subscribe(oInput, sEvent, callback)
+function ClassLib.Subscribe(oInput, sEvent, fnCallback)
     local tEvents = getmetatable(oInput).__events
     if not tEvents then return end
 
     tEvents[sEvent] = tEvents[sEvent] or {}
-    tEvents[sEvent][#tEvents[sEvent] + 1] = callback
+    tEvents[sEvent][#tEvents[sEvent] + 1] = fnCallback
 
-    return callback
+    return fnCallback
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unsubscribes from all subscribed Events in this Class, optionally passing the function to unsubscribe only that callback
 ---@param oInput table @The object to unsubscribe from
 ---@param sEvent string @The name of the event to unsubscribe from
----@param callback? function @The callback to unsubscribe
-function ClassLib.Unsubscribe(oInput, sEvent, callback)
+---@param fnCallback? function @The callback to unsubscribe
+function ClassLib.Unsubscribe(oInput, sEvent, fnCallback)
     local tEvents = getmetatable(oInput).__events
     if not tEvents[sEvent] then return end
 
-    if (type(callback) ~= "function") then
+    if (type(fnCallback) ~= "function") then
         tEvents[sEvent] = nil
         return
     end
 
     local tNew = {}
     for i, v in ipairs(tEvents[sEvent]) do
-        if (v ~= callback) then
+        if (v ~= fnCallback) then
             tNew[#tNew + 1] = v
         end
     end
@@ -322,8 +322,8 @@ if Client then
         local oInstance = tClassMT.__instances_map[iID]
         local tArgs = parseArgs(...)
         if oInstance then
-            for _, callback in ipairs(tRemoteEvents[sEvent]) do
-                callback(oInstance, table.unpack(tArgs))
+            for _, fnCallback in ipairs(tRemoteEvents[sEvent]) do
+                fnCallback(oInstance, table.unpack(tArgs))
             end
             return
         end
@@ -331,8 +331,8 @@ if Client then
         -- Wait for the instance to spawn if it hasn't already
         tClass.ClassSubscribe("Spawn", function(self)
             if (self:GetID() == iID) then
-                for _, callback in ipairs(tRemoteEvents[sEvent]) do
-                    callback(self, table.unpack(tArgs))
+                for _, fnCallback in ipairs(tRemoteEvents[sEvent]) do
+                    fnCallback(self, table.unpack(tArgs))
                 end
                 return false
             end
@@ -394,8 +394,8 @@ elseif Server then
         if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
 
         local tArgs = parseArgs(...)
-        for _, callback in ipairs(tRemoteEvents[sEvent]) do
-            callback(oInstance, pPly, table.unpack(tArgs))
+        for _, fnCallback in ipairs(tRemoteEvents[sEvent]) do
+            fnCallback(oInstance, pPly, table.unpack(tArgs))
         end
     end)
 end
@@ -404,39 +404,39 @@ end
 ---Subscribes to a remote event
 ---@param oInstance table @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
----@param callback function @The callback to call when the event is triggered
+---@param fnCallback function @The callback to call when the event is triggered
 ---@return function? @The callback
-function ClassLib.SubscribeRemote(oInstance, sEvent, callback)
+function ClassLib.SubscribeRemote(oInstance, sEvent, fnCallback)
     if (type(sEvent) ~= "string") then return end
 
     local tRemoteEvents = getmetatable(oInstance).__remote_events
     if not tRemoteEvents then return end
 
     tRemoteEvents[sEvent] = tRemoteEvents[sEvent] or {}
-    tRemoteEvents[sEvent][#tRemoteEvents[sEvent] + 1] = callback
+    tRemoteEvents[sEvent][#tRemoteEvents[sEvent] + 1] = fnCallback
 
-    return callback
+    return fnCallback
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unsubscribes from a remote event
 ---@param oInstance table @The object to unsubscribe from
 ---@param sEvent string @The name of the event to unsubscribe from+
----@param callback? function @The callback to unsubscribe
-function ClassLib.UnsubscribeRemote(oInstance, sEvent, callback)
+---@param fnCallback? function @The callback to unsubscribe
+function ClassLib.UnsubscribeRemote(oInstance, sEvent, fnCallback)
     if (type(sEvent) ~= "string") then return end
 
     local tRemoteEvents = getmetatable(oInstance).__remote_events
     if not tRemoteEvents or not tRemoteEvents[sEvent] then return end
 
-    if (type(callback) ~= "function") then
+    if (type(fnCallback) ~= "function") then
         tRemoteEvents[sEvent] = nil
         return
     end
 
     local tNewCallbacks = {}
     for _, v in ipairs(tRemoteEvents[sEvent]) do
-        if (v ~= callback) then
+        if (v ~= fnCallback) then
             tNewCallbacks[#tNewCallbacks + 1] = v
         end
     end

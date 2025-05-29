@@ -325,32 +325,32 @@ if Server then
 
     ---`🔹 Server`<br>
     ---Sets the players to replicate the instance to
-    ---@param xPlayers table<Player>|nil @The players to replicate the instance to
-    function BaseClass:SetReplicatedPlayers(xPlayers)
-        return ClassLib.SetReplicatedPlayers(self, xPlayers)
+    ---@param tPlayers table<Player>|nil @The players to replicate the instance to
+    function BaseClass:SetReplicatedPlayers(tPlayers)
+        return ClassLib.SetReplicatedPlayers(self, tPlayers)
     end
 
     ---`🔹 Server`<br>
     ---Adds a player to replicate the instance to
-    ---@param xPlayer Player @The player to replicate the instance to
+    ---@param pPly Player @The player to replicate the instance to
     ---@return boolean @Whether the player was added
-    function BaseClass:AddReplicatedPlayer(xPlayer)
-        return ClassLib.AddReplicatedPlayer(self, xPlayer)
+    function BaseClass:AddReplicatedPlayer(pPly)
+        return ClassLib.AddReplicatedPlayer(self, pPly)
     end
 
     ---`🔹 Server`<br>
     ---Removes a player from replicating the instance to
-    ---@param xPlayer Player @The player to remove
+    ---@param pPly Player @The player to remove
     ---@return boolean @Whether the player was removed
-    function BaseClass:RemoveReplicatedPlayer(xPlayer)
-        return ClassLib.RemoveReplicatedPlayer(self, xPlayer)
+    function BaseClass:RemoveReplicatedPlayer(pPly)
+        return ClassLib.RemoveReplicatedPlayer(self, pPly)
     end
 
     ---`🔹 Server`<br>
     ---Returns wether a player is replicating the instance
-    ---@param xPlayer Player @The player to check
+    ---@param pPly Player @The player to check
     ---@return boolean @Whether the player is replicating the instance
-    function BaseClass:IsPlayerReplicated(xPlayer)
-        return ClassLib.IsPlayerReplicated(self, xPlayer)
+    function BaseClass:IsPlayerReplicated(pPly)
+        return ClassLib.IsPlayerReplicated(self, pPly)
     end
 end
