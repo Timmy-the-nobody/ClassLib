@@ -253,7 +253,7 @@ end
 local function serializeValue(v)
     if ClassLib.IsClassLibInstance(v) then
         if Client and ClassLib.HasAuthority(v) then return end
-        return { __classlib = true, c = v:GetClassName(), i = v:GetID() }
+        return {__classlib = true, c = v:GetClassName(), i = v:GetID()}
     elseif (type(v) == "table") then
         local tRes = {}
         for i, j in pairs(v) do tRes[i] = serializeValue(j) end
@@ -264,7 +264,7 @@ local function serializeValue(v)
 end
 
 local function serializeArgs(...)
-    local tArgs, tSerialized = { ... }, {}
+    local tArgs, tSerialized = {...}, {}
     for i = 1, #tArgs do
         tSerialized[i] = serializeValue(tArgs[i])
     end
@@ -288,7 +288,7 @@ local function parseValue(v)
 end
 
 local function parseArgs(...)
-    local tArgs, tParsed = { ... }, {}
+    local tArgs, tParsed = {...}, {}
     for i = 1, #tArgs do
         tParsed[i] = parseValue(tArgs[i])
     end
@@ -330,13 +330,12 @@ if Client then
 
         -- Wait for the instance to spawn if it hasn't already
         tClass.ClassSubscribe("Spawn", function(self)
-            if (self:GetID() ~= iID) then return end
-
-            for _, callback in ipairs(tRemoteEvents[sEvent]) do
-                callback(self, table.unpack(tArgs))
+            if (self:GetID() == iID) then
+                for _, callback in ipairs(tRemoteEvents[sEvent]) do
+                    callback(self, table.unpack(tArgs))
+                end
+                return false
             end
-
-            return false
         end)
     end)
 elseif Server then
@@ -882,7 +881,12 @@ if Server then
         local tMT = getmetatable(oInstance)
         if not tMT then return {} end
 
-        return tMT.__replicated_players or {}
+        local tList = {}
+        for pPly, _ in pairs(tMT.__replicated_players or {}) do
+            tList[#tList + 1] = pPly
+        end
+
+        return tList
     end
 
     ---`🔹 Server`<br>
