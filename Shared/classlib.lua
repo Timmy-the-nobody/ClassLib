@@ -481,7 +481,6 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
     tNewMT.__instances = {}
     tNewMT.__instances_map = {}
     tNewMT.__next_id = 1
-    tNewMT.__next_client_id = -1
     tNewMT.__broadcast_creation = bSync
     tNewMT.__inherited_classes = {}
     tNewMT.__classlib_class = true
@@ -557,18 +556,9 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
     tNewMT.__classlib_instance = true
 
     local oInstance = setmetatable({}, tNewMT)
-    local iID = iForcedID
-    if not iID then
-        if Client then
-            iID = tClassMT.__next_client_id
-            tClassMT.__next_client_id = (tClassMT.__next_client_id - 1)
-        else
-            iID = tClassMT.__next_id
-            tClassMT.__next_id = (tClassMT.__next_id + 1)
-        end
-    end
+    ClassLib.SetValue(oInstance, "id", iForcedID or tClassMT.__next_id)
 
-    ClassLib.SetValue(oInstance, "id", iID)
+    tClassMT.__next_id = (tClassMT.__next_id + 1)
     tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
 
     if rawget(oClass, "Constructor") then
@@ -706,11 +696,9 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
             local tClassMT = getmetatable(tClass)
             if tClassMT and tClassMT.__instances_map then
                 local iOldID = ClassLib.GetValue(oInstance, "id")
-                -- Remove `[old ID] = instance` from the instance map
                 if iOldID then
                     tClassMT.__instances_map[iOldID] = nil
                 end
-                -- Store `[new ID] = instance in the instance map
                 tClassMT.__instances_map[xValue] = oInstance
             end
         end
@@ -1004,8 +992,7 @@ if Client then
     ---@param oInstance table @The instance to check
     ---@return boolean @false if it was spawned by the server, true if it was spawned by the client
     function ClassLib.HasAuthority(oInstance)
-        if (type(oInstance) ~= "table") or not oInstance.GetID then return false end
-        return (oInstance:GetID() > 0)
+        return not getmetatable(oInstance).__server_authority
     end
 
     Events.SubscribeRemote(tEvMap.Constructor, function(sClassName, iID, tBroadcastedValues)
@@ -1013,6 +1000,7 @@ if Client then
         if not tClass then return end
 
         local oInstance = ClassLib.NewInstance(tClass, iID)
+        getmetatable(oInstance).__server_authority = true
 
         for sKey, xValue in pairs(tBroadcastedValues) do
             ClassLib.SetValue(oInstance, sKey, xValue, true)
