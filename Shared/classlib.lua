@@ -790,6 +790,61 @@ function ClassLib.IsClassLibInstance(xInstance)
     return (tMT and tMT.__classlib_instance) and true or false
 end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Binds an instance to another instance (the bound instance will be destroyed when the "bound to" instance is destroyed)
+---@param oInstance table @The instance to bind
+---@param oBoundTo table @The instance to bind to
+function ClassLib.Bind(oInstance, oBoundTo)
+    if not ClassLib.IsClassLibInstance(oInstance) then return false end
+    if not ClassLib.IsClassLibInstance(oBoundTo) then return false end
+    if not oInstance:IsValid() or not oBoundTo:IsValid() then return false end
+
+    ClassLib.Unbind(oInstance)
+
+    local tMT = getmetatable(oInstance)
+    tMT.__binding = {
+        target = oBoundTo,
+        target_destroy_ev = oBoundTo:Subscribe("Destroy", function()
+            if not oInstance:IsValid() then return end
+
+            oInstance:Destroy()
+            ClassLib.Unbind(oInstance)
+        end),
+        self_destroy_ev = oInstance:Subscribe("Destroy", function()
+            ClassLib.Unbind(oInstance)
+        end)
+    }
+
+    return true
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unbinds an instance from another instance
+---@param oInstance table @The instance to unbind
+function ClassLib.Unbind(oInstance)
+    if not oInstance:IsValid() then return false end
+
+    local tMT = getmetatable(oInstance)
+    if tMT.__binding then
+        if tMT.__binding.target and tMT.__binding.target:IsValid() then
+            tMT.__binding.target:Unsubscribe(tMT.__binding.target_destroy_ev)
+        end
+        oInstance:Unsubscribe(tMT.__binding.self_destroy_ev)
+        tMT.__binding = nil
+    end
+
+    return true
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Gets the bound instance of an instance
+---@param oInstance table @The instance to get the bound instance of
+---@return table @The bound instance
+function ClassLib.GetBoundTo(oInstance)
+    local tMT = getmetatable(oInstance)
+    return tMT.__binding and tMT.__binding.target
+end
+
 -- Sync
 ----------------------------------------------------------------------
 
