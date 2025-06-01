@@ -686,6 +686,7 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
     if not tMT then return end
 
     xValue = serializeValue(xValue)
+    local xOldValue = tMT.__values[sKey]
 
     -- Handle ID change
     if (sKey == "id") then
@@ -708,8 +709,8 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
     oInstance[sKey] = xValue
     tMT.__values[sKey] = xValue
 
-    ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue)
-    ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue)
+    ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue, xOldValue)
+    ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue, xOldValue)
 
     if bBroadcast and Server then
         tMT.__broadcasted_values[sKey] = xValue
