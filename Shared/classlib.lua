@@ -13,7 +13,6 @@ local tEvMap = {
     ["SetValue"] = "%2",
     ["CLToSV"] = "%3",
     ["SVToCL"] = "%4",
-    ["SyncAllClassInstances"] = "%5",
 }
 
 local tCopyFromParentClassOnInherit = {
@@ -43,7 +42,6 @@ local tCopyFromClassOnNewInstance = {
     "__tostring"
 }
 
--- Cache some globals
 local type = type
 local setmetatable = setmetatable
 local getmetatable = getmetatable
@@ -168,10 +166,7 @@ end
 ---@param oInstance table @The instance to check
 ---@return boolean @True if the instance is valid, false otherwise
 function ClassLib.IsValid(oInstance)
-    if (type(oInstance) ~= "table") then return false end
-
-    local oClass = ClassLib.GetClass(oInstance)
-    if (type(oClass) ~= "table") then return false end
+    if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
     local tMT = getmetatable(oInstance)
     return (tMT.__is_valid ~= nil)
@@ -182,13 +177,8 @@ end
 ---@param oInstance table @The instance to check
 ---@return boolean @True if the instance is being destroyed, false otherwise
 function ClassLib.IsBeingDestroyed(oInstance)
-    if (type(oInstance) ~= "table") then return false end
-
-    local oClass = ClassLib.GetClass(oInstance)
-    if (type(oClass) ~= "table") then return false end
-
     local tMT = getmetatable(oInstance)
-    return (tMT.__is_being_destroyed ~= nil)
+    return tMT and (tMT.__is_being_destroyed ~= nil) or false
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -196,12 +186,8 @@ end
 ---@param oInstance table @The object
 ---@return table? @The class
 function ClassLib.GetClass(oInstance)
-    if (type(oInstance) ~= "table") then return end
-
     local tMT = getmetatable(oInstance)
-    if not tMT then return end
-
-    return tMT.__index
+    return tMT and tMT.__index
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -784,8 +770,6 @@ end
 ---@return boolean @Whether the value is a ClassLib instance
 ---@see ClassLib.IsClassLibClass
 function ClassLib.IsClassLibInstance(xInstance)
-    if (type(xInstance) ~= "table") then return false end
-
     local tMT = getmetatable(xInstance)
     return (tMT and tMT.__classlib_instance) and true or false
 end
@@ -793,27 +777,26 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Binds an instance to another instance (the bound instance will be destroyed when the "bound to" instance is destroyed)
 ---@param oInstance table @The instance to bind
----@param oBoundTo table @The instance to bind to
-function ClassLib.Bind(oInstance, oBoundTo)
-    if not ClassLib.IsClassLibInstance(oInstance) then return false end
-    if not ClassLib.IsClassLibInstance(oBoundTo) then return false end
-    if not oInstance:IsValid() or not oBoundTo:IsValid() then return false end
+---@param oTarget table @The instance to bind to
+function ClassLib.Bind(oInstance, oTarget)
+    if not oInstance or not oInstance:IsValid() then return false end
+    if not oTarget or not oTarget:IsValid() then return false end
+    if not oInstance.Subscribe or not oTarget.Subscribe then return false end
 
     ClassLib.Unbind(oInstance)
 
     local tMT = getmetatable(oInstance)
-    tMT.__binding = {
-        target = oBoundTo,
-        target_destroy_ev = oBoundTo:Subscribe("Destroy", function()
-            if not oInstance:IsValid() then return end
+    tMT.__bind = {}
+    tMT.__bind.target = oTarget
+    tMT.__bind.target_destroy_ev = oTarget:Subscribe("Destroy", function()
+        if not oInstance:IsValid() then return end
 
-            oInstance:Destroy()
-            ClassLib.Unbind(oInstance)
-        end),
-        self_destroy_ev = oInstance:Subscribe("Destroy", function()
-            ClassLib.Unbind(oInstance)
-        end)
-    }
+        oInstance:Destroy()
+        ClassLib.Unbind(oInstance)
+    end)
+    tMT.__bind.self_destroy_ev = oInstance:Subscribe("Destroy", function()
+        ClassLib.Unbind(oInstance)
+    end)
 
     return true
 end
@@ -821,18 +804,19 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unbinds an instance from another instance
 ---@param oInstance table @The instance to unbind
+---@return boolean @Whether the instance was successfully unbound
 function ClassLib.Unbind(oInstance)
-    if not oInstance:IsValid() then return false end
+    if not oInstance or not oInstance:IsValid() then return false end
 
     local tMT = getmetatable(oInstance)
-    if tMT.__binding then
-        if tMT.__binding.target and tMT.__binding.target:IsValid() then
-            tMT.__binding.target:Unsubscribe(tMT.__binding.target_destroy_ev)
-        end
-        oInstance:Unsubscribe(tMT.__binding.self_destroy_ev)
-        tMT.__binding = nil
+    if not tMT or not tMT.__bind then return false end
+
+    if tMT.__bind.target and tMT.__bind.target:IsValid() then
+        tMT.__bind.target:Unsubscribe(tMT.__bind.target_destroy_ev)
     end
 
+    oInstance:Unsubscribe(tMT.__bind.self_destroy_ev)
+    tMT.__bind = nil
     return true
 end
 
@@ -842,7 +826,7 @@ end
 ---@return table @The bound instance
 function ClassLib.GetBoundTo(oInstance)
     local tMT = getmetatable(oInstance)
-    return tMT.__binding and tMT.__binding.target
+    return tMT.__bind and tMT.__bind.target
 end
 
 -- Sync
@@ -861,36 +845,6 @@ if Server then
         if not tMT then return false end
         return tMT.__broadcasted_values[sKey] ~= nil
     end
-
-    -- ---`🔹 Server`<br>
-    -- ---Internal function to sync all instances of a class, you shouldn't call this directly
-    -- ---@param sClass string @The class to sync
-    -- ---@param pPly Player @The player to send the sync to
-    -- function ClassLib.SyncAllClassInstances(sClass, pPly)
-    --     assert((tClassesMap[sClass] ~= nil), "[ClassLib] Attempt to sync all instances of an invalid class")
-    --     assert((getmetatable(pPly) == Player), "[ClassLib] Attempt to sync all instances to an invalid player")
-
-    --     local tClass = tClassesMap[sClass]
-    --     local tClassMT = getmetatable(tClass)
-
-    --     if not tClassMT.__broadcast_creation then return end
-    --     if (#tClassMT.__instances == 0) then return end
-
-    --     local tSyncObjs = {}
-    --     for _, oInstance in ipairs(tClassMT.__instances) do
-    --         if not oInstance:IsValid() then goto continue end
-    --         if oInstance:IsBeingDestroyed() then goto continue end
-
-    --         tSyncObjs[#tSyncObjs + 1] = {
-    --             oInstance:GetID(),
-    --             getmetatable(oInstance).__broadcasted_values
-    --         }
-
-    --         ::continue::
-    --     end
-
-    --     Events.CallRemote(tEvMap.SyncAllClassInstances, pPly, sClass, tSyncObjs)
-    -- end
 
     ---`🔹 Server`<br>
     ---Internal function to sync the creation of an instance, you shouldn't call this directly
@@ -983,7 +937,7 @@ if Server then
         if (getmetatable(pPly) ~= Player) or not pPly:IsValid() then return false end
 
         local tMT = getmetatable(oInstance)
-        tMT.__replicated_players[pPly] = { sync_values = {} }
+        tMT.__replicated_players[pPly] = {sync_values = {}}
 
         ClassLib.SyncInstanceConstruct(oInstance, pPly)
 
@@ -1031,17 +985,9 @@ if Server then
             for _, oInstance in ipairs(tClassMT.__instances) do
                 ClassLib.SyncInstanceConstruct(oInstance, pPly)
             end
-
             ::continue::
         end
     end)
-
-    -- New "SyncAll" event
-    -- Player.Subscribe("Ready", function(pPly)
-    -- 	for sClass, oClass in pairs(tClassesMap) do
-    -- 		ClassLib.SyncAllClassInstances(sClass, pPly)
-    -- 	end
-    -- end)
 end
 
 if Client then
@@ -1081,17 +1027,4 @@ if Client then
 
         ClassLib.SetValue(oInstance, sKey, parseValue(xValue), true)
     end)
-
-    -- Events.SubscribeRemote(tEvMap.SyncAllClassInstances, function(sClassName, tInstances)
-    --     local tClass = ClassLib.GetClassByName(sClassName)
-    --     if not tClass then return end
-
-    --     for _, tInstance in ipairs(tInstances) do
-    --         local oInstance = ClassLib.NewInstance(tClass, tInstance[1])
-
-    --         for sKey, xValue in pairs(tInstance[2]) do
-    --             ClassLib.SetValue(oInstance, sKey, xValue, true)
-    --         end
-    --     end
-    -- end)
 end

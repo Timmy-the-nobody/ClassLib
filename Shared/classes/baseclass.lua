@@ -109,6 +109,26 @@ function BaseClass:GetClassName()
     return ClassLib.GetClassName(self)
 end
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Binds this instance to another instance (the bound instance will be destroyed when the "bound to" instance is destroyed)
+---@param oBoundTo table @The instance to bind to
+function BaseClass:Bind(oBoundTo)
+    return ClassLib.Bind(self, oBoundTo)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Unbinds this instance from any binding it has
+function BaseClass:Unbind()
+    return ClassLib.Unbind(self)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the instance to which this instance is bound
+---@return table? @The bound instance
+function BaseClass:GetBoundTo()
+    return ClassLib.GetBoundTo(self)
+end
+
 -- Static functions, These just serves for LuaLS annotations
 -- The overrides are in `ClassLib.Inherit`
 ----------------------------------------------------------------------
