@@ -370,7 +370,7 @@ if Server then
     ---Returns wether a player is replicating the instance
     ---@param pPly Player @The player to check
     ---@return boolean @Whether the player is replicating the instance
-    function BaseClass:IsPlayerReplicated(pPly)
-        return ClassLib.IsPlayerReplicated(self, pPly)
+    function BaseClass:IsReplicatedTo(pPly)
+        return ClassLib.IsReplicatedTo(self, pPly)
     end
 end

@@ -933,7 +933,7 @@ if Server then
     ---@param pPly Player @The player to add
     ---@return boolean @Whether the player was added
     function ClassLib.AddReplicatedPlayer(oInstance, pPly)
-        if ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
+        if ClassLib.IsReplicatedTo(oInstance, pPly) then return false end
         if (getmetatable(pPly) ~= Player) or not pPly:IsValid() then return false end
 
         local tMT = getmetatable(oInstance)
@@ -952,7 +952,7 @@ if Server then
     ---@param pPly Player @The player to remove
     ---@return boolean @Whether the player was removed
     function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
-        if not ClassLib.IsPlayerReplicated(oInstance, pPly) then return false end
+        if not ClassLib.IsReplicatedTo(oInstance, pPly) then return false end
 
         ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
         ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, false)
@@ -969,7 +969,7 @@ if Server then
     ---@param oInstance table @The instance to check
     ---@param pPly Player @The player to check
     ---@return boolean @Whether the player is replicating the instance
-    function ClassLib.IsPlayerReplicated(oInstance, pPly)
+    function ClassLib.IsReplicatedTo(oInstance, pPly)
         local tMT = getmetatable(oInstance)
         if not tMT or not tMT.__replicated_players then return false end
 
