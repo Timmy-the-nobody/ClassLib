@@ -701,18 +701,13 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
     if bBroadcast and Server then
         tMT.__broadcasted_values[sKey] = xValue
 
-        if getmetatable(oInstance:GetClass()).__broadcast_creation then
-            if Server then
-                Events.BroadcastRemote(tEvMap.SetValue, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
-            end
+        if tMT.__replicate_to_all then
+            Events.BroadcastRemote(tEvMap.SetValue, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
         else
             for pPly, tInfo in pairs(tMT.__replicated_players) do
-                if not pPly:IsValid() then goto continue end
-                if (tInfo.sync_values[sKey] == xValue) then goto continue end
-
-                Events.CallRemote(tEvMap.SetValue, pPly, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
-                tMT.__replicated_players[pPly].sync_values[sKey] = xValue
-                ::continue::
+                if pPly:IsValid() then
+                    Events.CallRemote(tEvMap.SetValue, pPly, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
+                end
             end
         end
     end
@@ -889,6 +884,10 @@ if Server then
         local tMT = getmetatable(oInstance)
         if not tMT then return {} end
 
+        if tMT.__replicate_to_all then
+            return Player.GetAll()
+        end
+
         local tList = {}
         for pPly, _ in pairs(tMT.__replicated_players or {}) do
             tList[#tList + 1] = pPly
@@ -904,9 +903,18 @@ if Server then
     function ClassLib.SetReplicatedPlayers(oInstance, xPlayers)
         if not ClassLib.IsClassLibInstance(oInstance) then return end
 
+        if (type(xPlayers) == "string") and (xPlayers == "*") then
+            ClassLib.AddReplicatedPlayer(oInstance, "*")
+            return
+        end
+
         local tMT = getmetatable(oInstance)
+        tMT.__replicate_to_all = false
+
         if (type(xPlayers) ~= "table") then
-            tMT.__replicated_players = {}
+            for pPly in pairs(tMT.__replicated_players) do
+                ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
+            end
             return
         end
 
@@ -920,7 +928,7 @@ if Server then
             end
         end
 
-        for pPly, _ in pairs(tOldMap) do
+        for pPly in pairs(tOldMap) do
             if not tNewMap[pPly] then
                 ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
             end
@@ -930,19 +938,32 @@ if Server then
     ---`🔹 Server`<br>
     ---Adds a player to replicate an instance to
     ---@param oInstance table @The instance to add the player to
-    ---@param pPly Player @The player to add
+    ---@param xPly Player|string @The player to add, or "*" for all
     ---@return boolean @Whether the player was added
-    function ClassLib.AddReplicatedPlayer(oInstance, pPly)
-        if ClassLib.IsReplicatedTo(oInstance, pPly) then return false end
-        if (getmetatable(pPly) ~= Player) or not pPly:IsValid() then return false end
+    function ClassLib.AddReplicatedPlayer(oInstance, xPly)
+        if not ClassLib.IsClassLibInstance(oInstance) then return false end
+
+        -- Replicate to all
+        if (type(xPly) == "string") and (xPly == "*") then
+            local tMT = getmetatable(oInstance)
+            tMT.__replicate_to_all = true
+            tMT.__replicated_players = {}
+
+            ClassLib.SyncInstanceConstruct(oInstance)
+            return true
+        end
+
+        -- Replicate to single player
+        if ClassLib.IsReplicatedTo(oInstance, xPly) then return false end
+        if (getmetatable(xPly) ~= Player) then return false end
 
         local tMT = getmetatable(oInstance)
-        tMT.__replicated_players[pPly] = {sync_values = {}}
+        tMT.__replicate_to_all = false
+        tMT.__replicated_players[xPly] = true
 
-        ClassLib.SyncInstanceConstruct(oInstance, pPly)
-
-        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, true)
-        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, true)
+        ClassLib.SyncInstanceConstruct(oInstance, xPly)
+        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, xPly, true)
+        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, xPly, true)
         return true
     end
 
@@ -952,6 +973,19 @@ if Server then
     ---@param pPly Player @The player to remove
     ---@return boolean @Whether the player was removed
     function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
+        if not ClassLib.IsClassLibInstance(oInstance) then return false end
+
+        -- Desync all
+        if (type(pPly) == "string") and (pPly == "*") then
+            local tMT = getmetatable(oInstance)
+            tMT.__replicate_to_all = false
+            tMT.__replicated_players = {}
+
+            ClassLib.SyncInstanceDestroy(oInstance)
+            return true
+        end
+
+        -- Desync single player
         if not ClassLib.IsReplicatedTo(oInstance, pPly) then return false end
 
         ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
@@ -965,15 +999,19 @@ if Server then
     end
 
     ---`🔹 Server`<br>
-    ---Checks if a player is replicating an instance
+    ---Returns true if the instance is replicated to the player, or to all players via "*"
     ---@param oInstance table @The instance to check
     ---@param pPly Player @The player to check
     ---@return boolean @Whether the player is replicating the instance
     function ClassLib.IsReplicatedTo(oInstance, pPly)
-        local tMT = getmetatable(oInstance)
-        if not tMT or not tMT.__replicated_players then return false end
+        if (getmetatable(pPly) ~= Player) then return false end
 
-        return tMT.__replicated_players[pPly] and true or false
+        local tMT = getmetatable(oInstance)
+        if not tMT then return false end
+
+        if tMT.__replicate_to_all then return true end
+
+        return tMT.__replicated_players[pPly] or false
     end
 
     Player.Subscribe("Ready", function(pPly)
