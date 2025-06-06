@@ -553,7 +553,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
     ClassLib.Call(oClass, "Spawn", oInstance)
 
     if tClassMT.__broadcast_creation and Server then
-        ClassLib.SyncInstanceConstruct(oInstance)
+        ClassLib.SetReplicatedPlayers(oInstance, "*")
     end
 
     return oInstance
@@ -939,9 +939,8 @@ if Server then
     ---Adds a player to replicate an instance to
     ---@param oInstance table @The instance to add the player to
     ---@param xPly Player|string @The player to add, or "*" for all
-    ---@return boolean @Whether the player was added
     function ClassLib.AddReplicatedPlayer(oInstance, xPly)
-        if not ClassLib.IsClassLibInstance(oInstance) then return false end
+        if not ClassLib.IsClassLibInstance(oInstance) then return end
 
         -- Replicate to all
         if (type(xPly) == "string") and (xPly == "*") then
@@ -954,8 +953,8 @@ if Server then
         end
 
         -- Replicate to single player
-        if ClassLib.IsReplicatedTo(oInstance, xPly) then return false end
-        if (getmetatable(xPly) ~= Player) then return false end
+        if ClassLib.IsReplicatedTo(oInstance, xPly) then return end
+        if (getmetatable(xPly) ~= Player) then return end
 
         local tMT = getmetatable(oInstance)
         tMT.__replicate_to_all = false
@@ -964,16 +963,14 @@ if Server then
         ClassLib.SyncInstanceConstruct(oInstance, xPly)
         ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, xPly, true)
         ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, xPly, true)
-        return true
     end
 
     ---`🔹 Server`<br>
     ---Removes a player from replicating an instance to
     ---@param oInstance table @The instance to remove the player from
     ---@param pPly Player @The player to remove
-    ---@return boolean @Whether the player was removed
     function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
-        if not ClassLib.IsClassLibInstance(oInstance) then return false end
+        if not ClassLib.IsClassLibInstance(oInstance) then return end
 
         -- Desync all
         if (type(pPly) == "string") and (pPly == "*") then
@@ -982,11 +979,11 @@ if Server then
             tMT.__replicated_players = {}
 
             ClassLib.SyncInstanceDestroy(oInstance)
-            return true
+            return
         end
 
         -- Desync single player
-        if not ClassLib.IsReplicatedTo(oInstance, pPly) then return false end
+        if not ClassLib.IsReplicatedTo(oInstance, pPly) then return end
 
         ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
         ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, false)
@@ -995,7 +992,6 @@ if Server then
         tMT.__replicated_players[pPly] = nil
 
         ClassLib.SyncInstanceDestroy(oInstance, pPly)
-        return true
     end
 
     ---`🔹 Server`<br>
@@ -1004,24 +1000,20 @@ if Server then
     ---@param pPly Player @The player to check
     ---@return boolean @Whether the player is replicating the instance
     function ClassLib.IsReplicatedTo(oInstance, pPly)
-        if (getmetatable(pPly) ~= Player) then return false end
-
         local tMT = getmetatable(oInstance)
-        if not tMT then return false end
-
-        if tMT.__replicate_to_all then return true end
-
-        return tMT.__replicated_players[pPly] or false
+        return tMT.__replicate_to_all and true or (tMT.__replicated_players[pPly] or false)
     end
 
     Player.Subscribe("Ready", function(pPly)
         for sClass, oClass in pairs(tClassesMap) do
             local tClassMT = getmetatable(oClass)
-            if not tClassMT.__broadcast_creation then goto continue end
-            if (#tClassMT.__instances == 0) then goto continue end
+            local tInstances = tClassMT.__instances
+            if not tInstances or (#tInstances == 0) then goto continue end
 
-            for _, oInstance in ipairs(tClassMT.__instances) do
-                ClassLib.SyncInstanceConstruct(oInstance, pPly)
+            for i = 1, #tInstances do
+                if ClassLib.IsReplicatedTo(tInstances[i], pPly) then
+                    ClassLib.SyncInstanceConstruct(tInstances[i], pPly)
+                end
             end
             ::continue::
         end
