@@ -7,6 +7,8 @@
 ClassLib = {}
 
 local tClassesMap = {}
+local tClassesList = {}
+
 local tEvMap = {
     ["Constructor"] = "%0",
     ["Destructor"] = "%1",
@@ -503,6 +505,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
     function oNewClass.UnsubscribeRemote(...) return ClassLib.UnsubscribeRemote(oNewClass, ...) end
 
     tClassesMap[sClassName] = oNewClass
+    tClassesList[#tClassesList + 1] = oNewClass
 
     tFromMT.__inherited_classes = tFromMT.__inherited_classes or {}
     tFromMT.__inherited_classes[#tFromMT.__inherited_classes + 1] = oNewClass
@@ -1005,8 +1008,10 @@ if Server then
     end
 
     Player.Subscribe("Ready", function(pPly)
-        for sClass, oClass in pairs(tClassesMap) do
+        for _, oClass in ipairs(tClassesList) do
             local tClassMT = getmetatable(oClass)
+            if not tClassMT then goto continue end
+
             local tInstances = tClassMT.__instances
             if not tInstances or (#tInstances == 0) then goto continue end
 
