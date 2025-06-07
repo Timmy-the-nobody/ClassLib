@@ -181,10 +181,11 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
----@param bSync? boolean @Whether to sync the creation/destruction of the instance of the class and it's broadcasted values to all players
----@return table @The new class
-function BaseClass.Inherit(sClassName, bSync)
-    return ClassLib.Inherit(BaseClass, sClassName, bSync)
+---@param iFlags? ClassLib.FL @The class flags to use, defaults to `nil`
+---@return table @The newly created class
+---@see ClassLib.FL
+function BaseClass.Inherit(sClassName, iFlags)
+    return ClassLib.Inherit(BaseClass, sClassName, iFlags)
 end
 
 -- Events

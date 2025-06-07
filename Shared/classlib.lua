@@ -4,13 +4,38 @@
     Copyright © Timmy-the-nobody, 2023, https://github.com/Timmy-the-nobody
 ]]--
 
+---`🔸 Client`<br>`🔹 Server`<br>
+---Contains all ClassLib global functions and variables
 ClassLib = {}
 
-local REPLICATE_TO_ALL = "*"
+---@enum ClassLib.FL
+---Flags used to define the behavior of a class<br>
+---- `Replicated` (1) - Replicate the instance to all players by default<br>
+---- `SharedIDs` (2) - Use a synchronized/shared ID space
+---- `Singleton` (3) - Only allow one instance of the class to exist at a time
+ClassLib.FL = {
+    Replicated = 1,
+    GlobalIDs = 2,
+    -- ServerAuthority = 4,
+    -- Singleton = 3
+}
+
+local type = type
+local setmetatable = setmetatable
+local getmetatable = getmetatable
+local ipairs = ipairs
+local pairs = pairs
+local error = error
+local assert = assert
+local rawget = rawget
 
 local tClassesMap = {}
 local tClassesList = {}
 
+-- Magic keyword that represents all players
+local REPLICATE_ALL_SYMBOL = "*"
+
+-- Event map/lightweight wire protocol
 local tEvMap = {
     ["Constructor"] = "%0",
     ["Destructor"] = "%1",
@@ -19,6 +44,7 @@ local tEvMap = {
     ["SVToCL"] = "%4",
 }
 
+-- List of keys to copy from the parent class on inherit
 local tCopyFromParentClassOnInherit = {
     "__newindex",
     "__call",
@@ -33,6 +59,7 @@ local tCopyFromParentClassOnInherit = {
     "__tostring"
 }
 
+-- List of keys to copy from the parent class on new instance
 local tCopyFromClassOnNewInstance = {
     "__newindex",
     "__call",
@@ -45,15 +72,6 @@ local tCopyFromClassOnNewInstance = {
     "__concat",
     "__tostring"
 }
-
-local type = type
-local setmetatable = setmetatable
-local getmetatable = getmetatable
-local ipairs = ipairs
-local pairs = pairs
-local error = error
-local assert = assert
-local rawget = rawget
 
 local function serializeValue(v)
     if ClassLib.IsClassLibInstance(v) then
@@ -437,13 +455,19 @@ end
 -- ClassLib
 ----------------------------------------------------------------------
 
+function ClassLib.HasFlag(iFlags, iFlag)
+    if not iFlags or not iFlag then return false end
+    return ((iFlags % (2 * iFlag)) >= iFlag)
+end
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from the passed class
 ---@param oInheritFrom table @The class to inherit from
 ---@param sClassName string @The name of the class
----@param bSync boolean @Whether to broadcast the creation of a new instance of the class
+---@param iFlags? ClassLib.FL @The class flags:<br>
 ---@return table @The new class
-function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
+---@see ClassLib.FL
+function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
     if tClassesMap[sClassName] then
         Console.Warn("[ClassLib] Attempt to create a class with a name that already exists")
@@ -452,7 +476,8 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
 
     assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
-    bSync = (bSync and true or false)
+    local bSync = ClassLib.HasFlag(iFlags, ClassLib.FL.Replicated)
+    local bUseSharedIDs = (not bSync) and ClassLib.HasFlag(iFlags, ClassLib.FL.SharedIDs)
 
     local tFromMT = getmetatable(oInheritFrom)
 
@@ -469,9 +494,12 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
     tNewMT.__remote_events = {}
     tNewMT.__instances = {}
     tNewMT.__instances_map = {}
-    tNewMT.__next_id = 1
+    tNewMT.__last_id = 0
+    tNewMT.__last_client_id = 0
+    tNewMT.__use_shared_ids = bUseSharedIDs
     tNewMT.__broadcast_creation = bSync
     tNewMT.__inherited_classes = {}
+    tNewMT.__flags = (iFlags or 0)
     tNewMT.__classlib_class = true
 
     local oNewClass = setmetatable({}, tNewMT)
@@ -517,13 +545,30 @@ function ClassLib.Inherit(oInheritFrom, sClassName, bSync)
     return oNewClass
 end
 
+local function allocateID(oClass, __iSyncID)
+    assert(ClassLib.IsClassLibClass(oClass), "[ClassLib] Attempt to allocate an ID on a non-classlib value")
+
+    if Client and __iSyncID then
+        return __iSyncID
+    end
+
+    local tMT = getmetatable(oClass)
+    if Server or tMT.__use_shared_ids then
+        tMT.__last_id = (tMT.__last_id + 1)
+        return tMT.__last_id
+    end
+
+    tMT.__last_client_id = (tMT.__last_client_id - 1)
+    return tMT.__last_client_id
+end
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new instance of the passed class
 ---@param oClass table @The class to create an instance of
----@param iForcedID? number @The forced ID of the instance, used for syncing
+---@param __iSyncID? number @The forced ID of the instance, used for syncing the instance on the client from the server, you should NEVER use this
 ---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
-function ClassLib.NewInstance(oClass, iForcedID, ...)
+function ClassLib.NewInstance(oClass, __iSyncID, ...)
     assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
     local tClassMT = getmetatable(oClass)
@@ -546,10 +591,10 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
     tNewMT.__classlib_instance = true
 
     local oInstance = setmetatable({}, tNewMT)
-    ClassLib.SetValue(oInstance, "id", iForcedID or tClassMT.__next_id)
-
-    tClassMT.__next_id = (tClassMT.__next_id + 1)
     tClassMT.__instances[#tClassMT.__instances + 1] = oInstance
+
+    local iAllocatedID = allocateID(oClass, __iSyncID)
+    ClassLib.SetValue(oInstance, "id", iAllocatedID)
 
     if rawget(oClass, "Constructor") then
         rawget(oClass, "Constructor")(oInstance, ...)
@@ -558,7 +603,7 @@ function ClassLib.NewInstance(oClass, iForcedID, ...)
     ClassLib.Call(oClass, "Spawn", oInstance)
 
     if tClassMT.__broadcast_creation and Server then
-        ClassLib.AddReplicatedPlayer(oInstance, REPLICATE_TO_ALL)
+        ClassLib.AddReplicatedPlayer(oInstance, REPLICATE_ALL_SYMBOL)
     end
 
     return oInstance
@@ -624,12 +669,12 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
     assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to clone an invalid object")
 
     local oClass = ClassLib.GetClass(oInstance)
-    assert((type(oClass) == "table"), "[ClassLib] The object passed to ClassLib.Clone has no valid class")
+    assert((type(oClass) == "table"), "[ClassLib] The object passed has no valid class")
 
     local oClone = ClassLib.NewInstance(oClass, nil, ...)
     local bCheckIgnoredKeys = (type(tIgnoredKeys) == "table")
 
-    -- Copy classic values
+    -- Copy instance properties
     for sKey, xVal in pairs(oInstance) do
         if (sKey == "id") then goto continue end
         if bCheckIgnoredKeys then
@@ -637,14 +682,12 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
                 if (sKey == sIgnoredKey) then goto continue end
             end
         end
-
         oClone[sKey] = xVal
         ::continue::
     end
 
     -- Copy classlib values
-    local tBroadcastedValues = ClassLib.GetAllValuesKeys(oInstance, true)
-
+    local tSyncValues = ClassLib.GetAllValuesKeys(oInstance, true)
     for sKey, xVal in pairs(ClassLib.GetAllValuesKeys(oInstance, false)) do
         if (sKey == "id") then goto continue end
         if bCheckIgnoredKeys then
@@ -652,9 +695,7 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
                 if (sKey == sIgnoredKey) then goto continue end
             end
         end
-
-        local bBroadcast = (tBroadcastedValues[sKey] and Server)
-        ClassLib.SetValue(oClone, sKey, xVal, bBroadcast)
+        ClassLib.SetValue(oClone, sKey, xVal, (tSyncValues[sKey] and Server))
         ::continue::
     end
 
@@ -912,8 +953,8 @@ if Server then
     function ClassLib.SetReplicatedPlayers(oInstance, xPlayers)
         if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
-        if (xPlayers == REPLICATE_TO_ALL) then
-            ClassLib.AddReplicatedPlayer(oInstance, REPLICATE_TO_ALL)
+        if (xPlayers == REPLICATE_ALL_SYMBOL) then
+            ClassLib.AddReplicatedPlayer(oInstance, REPLICATE_ALL_SYMBOL)
             return true
         end
 
@@ -923,7 +964,7 @@ if Server then
         if (type(xPlayers) ~= "table") then
             if (xPlayers == false) then
                 if tMT.__replicate_to_all then
-                    ClassLib.RemoveReplicatedPlayer(oInstance, REPLICATE_TO_ALL)
+                    ClassLib.RemoveReplicatedPlayer(oInstance, REPLICATE_ALL_SYMBOL)
                 else
                     for pPly in pairs(tMT.__replicated_players) do
                         ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
@@ -969,7 +1010,7 @@ if Server then
         local tMT = getmetatable(oInstance)
 
         -- Replicate to all
-        if (xPly == REPLICATE_TO_ALL) then
+        if (xPly == REPLICATE_ALL_SYMBOL) then
             if tMT.__replicate_to_all then return false end
 
             tMT.__replicate_to_all = true
@@ -1003,7 +1044,7 @@ if Server then
         local tMT = getmetatable(oInstance)
 
         -- Desync all
-        if (pPly == REPLICATE_TO_ALL) then
+        if (pPly == REPLICATE_ALL_SYMBOL) then
             if tMT.__replicate_to_all then
                 tMT.__replicate_to_all = false
                 tMT.__replicated_players = {}
@@ -1089,7 +1130,7 @@ if Client then
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
-        local oInstance = ClassLib.NewInstance(tClass, iID)
+        local oInstance = tClass.GetByID(iID) or ClassLib.NewInstance(tClass, iID)
         getmetatable(oInstance).__server_authority = true
 
         for sKey, xValue in pairs(tBroadcastedValues) do
