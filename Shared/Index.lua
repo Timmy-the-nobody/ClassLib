@@ -4,7 +4,14 @@
     Copyright © Timmy-the-nobody, 2023, https://github.com/Timmy-the-nobody
 ]]--
 
-Package.Require("classlib.lua")
+ClassLib = {}
+
+Package.Require("classlib_utils.lua")
+Package.Require("classlib_core.lua")
+Package.Require("classlib_instance.lua")
+Package.Require("classlib_events.lua")
+Package.Require("classlib_sync.lua")
+
 Package.Require("classes/baseclass.lua")
 Package.Require("classes/baseclassex.lua")
 
