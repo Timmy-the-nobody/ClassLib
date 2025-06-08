@@ -61,7 +61,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
     local bSync = ClassLib.HasFlag(iFlags, ClassLib.FL.Replicated)
-    local bUseGlobalIDs = (not bSync) and ClassLib.HasFlag(iFlags, ClassLib.FL.GlobalIDs)
+    local bUseGlobalPool = (not bSync) and ClassLib.HasFlag(iFlags, ClassLib.FL.GlobalPool)
 
     local tFromMT = getmetatable(oInheritFrom)
 
@@ -80,7 +80,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     tNewMT.__instances_map = {}
     tNewMT.__last_id = 0
     tNewMT.__last_client_id = 0
-    tNewMT.__use_shared_ids = bUseGlobalIDs
+    tNewMT.__use_global_pool = bUseGlobalPool
     tNewMT.__broadcast_creation = bSync
     tNewMT.__inherited_classes = {}
     tNewMT.__flags = (iFlags or 0)
@@ -91,33 +91,19 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     local tClassMT = getmetatable(oNewClass)
 
     -- Add static functions to the new class
-    function oNewClass.GetAll() return tClassMT.__instances end
-
-    function oNewClass.GetCount() return #tClassMT.__instances end
-
-    function oNewClass.GetByID(iID) return tClassMT.__instances_map[iID] end
-
-    function oNewClass.GetParentClass() return ClassLib.Super(oNewClass) end
-
-    function oNewClass.GetAllParentClasses() return ClassLib.SuperAll(oNewClass) end
-
-    function oNewClass.IsChildOf(oClass) return ClassLib.IsA(oNewClass, oClass, true) end
-
-    function oNewClass.Inherit(...) return ClassLib.Inherit(oNewClass, ...) end
-
-    function oNewClass.GetInheritedClasses() return ClassLib.GetInheritedClasses(oNewClass) end
-
-    -- Adds static functions related to local events to the new class
-    function oNewClass.ClassCall(sEvent, ...) return ClassLib.Call(oNewClass, sEvent, ...) end
-
-    function oNewClass.ClassSubscribe(...) return ClassLib.Subscribe(oNewClass, ...) end
-
-    function oNewClass.ClassUnsubscribe(...) return ClassLib.Unsubscribe(oNewClass, ...) end
-
-    -- Adds static functions related to remote events to the new class
-    function oNewClass.SubscribeRemote(...) return ClassLib.SubscribeRemote(oNewClass, ...) end
-
-    function oNewClass.UnsubscribeRemote(...) return ClassLib.UnsubscribeRemote(oNewClass, ...) end
+    function oNewClass.GetAll()                 return tClassMT.__instances end
+    function oNewClass.GetCount()               return #tClassMT.__instances end
+    function oNewClass.GetByID(iID)             return tClassMT.__instances_map[iID] end
+    function oNewClass.GetParentClass()         return ClassLib.Super(oNewClass) end
+    function oNewClass.GetAllParentClasses()    return ClassLib.SuperAll(oNewClass) end
+    function oNewClass.IsChildOf(oClass)        return ClassLib.IsA(oNewClass, oClass, true) end
+    function oNewClass.Inherit(...)             return ClassLib.Inherit(oNewClass, ...) end
+    function oNewClass.GetInheritedClasses()    return ClassLib.GetInheritedClasses(oNewClass) end
+    function oNewClass.ClassCall(sEvent, ...)   return ClassLib.Call(oNewClass, sEvent, ...) end
+    function oNewClass.ClassSubscribe(...)      return ClassLib.Subscribe(oNewClass, ...) end
+    function oNewClass.ClassUnsubscribe(...)    return ClassLib.Unsubscribe(oNewClass, ...) end
+    function oNewClass.SubscribeRemote(...)     return ClassLib.SubscribeRemote(oNewClass, ...) end
+    function oNewClass.UnsubscribeRemote(...)   return ClassLib.UnsubscribeRemote(oNewClass, ...) end
 
     ClassLib.__classmap[sClassName] = oNewClass
     ClassLib.__classlist[#ClassLib.__classlist + 1] = oNewClass

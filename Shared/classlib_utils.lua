@@ -11,13 +11,14 @@ local getmetatable = getmetatable
 ---@enum ClassLib.FL
 ---Flags used to define the behavior of a class<br>
 ---- `Replicated` (1) - Replicate the instance to all players by default<br>
----- `GlobalIDs` (2) - Use a shared ID space (usefull for instances created on the shared-side without any sync, keeps consistent IDs between server/client)
+---- `GlobalPool` (2) - Use a shared ID space (usefull for instances created on the shared-side without any sync, keeps consistent IDs between server/client)
 ---- `Singleton` (3) - Only allow one instance of the class to exist at a time
 ClassLib.FL = {
-    Replicated = 1,
-    GlobalIDs = 2,
-    Singleton = 3
-    -- ServerAuthority = 4,
+    Replicated = (2 ^ 0),
+    GlobalPool = (2 ^ 1),
+    Singleton = (2 ^ 2)
+    -- ServerAuthority = 8,
+    -- 16, 32, 64, 128, 256, 512, etc..
 }
 
 ---`🔸 Client`<br>`🔹 Server`<br>

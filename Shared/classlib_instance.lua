@@ -33,7 +33,7 @@ local function allocateID(oClass, __iSyncID)
     end
 
     local tMT = getmetatable(oClass)
-    if Server or tMT.__use_shared_ids then
+    if Server or tMT.__use_global_pool then
         tMT.__last_id = (tMT.__last_id + 1)
         return tMT.__last_id
     end
@@ -442,5 +442,3 @@ function ClassLib.GetBoundTo(oInstance)
     local tMT = getmetatable(oInstance)
     return tMT.__bind and tMT.__bind.target
 end
-
-
