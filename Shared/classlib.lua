@@ -17,7 +17,7 @@ ClassLib.FL = {
     Replicated = 1,
     GlobalIDs = 2,
     -- ServerAuthority = 4,
-    -- Singleton = 3
+    Singleton = 3
 }
 
 local type = type
@@ -500,6 +500,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     tNewMT.__broadcast_creation = bSync
     tNewMT.__inherited_classes = {}
     tNewMT.__flags = (iFlags or 0)
+    tNewMT.__singleton_instance = nil
     tNewMT.__classlib_class = true
 
     local oNewClass = setmetatable({}, tNewMT)
@@ -572,6 +573,13 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
     local tClassMT = getmetatable(oClass)
+    local bIsSingleton = ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Singleton)
+
+    if bIsSingleton then
+        if tClassMT.__singleton_instance and ClassLib.IsValid(tClassMT.__singleton_instance) then
+            return tClassMT.__singleton_instance
+        end
+    end
 
     local tNewMT = {}
     for _, sKey in ipairs(tCopyFromClassOnNewInstance) do
@@ -604,6 +612,10 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
 
     if tClassMT.__broadcast_creation and Server then
         ClassLib.AddReplicatedPlayer(oInstance, REPLICATE_ALL_SYMBOL)
+    end
+
+    if bIsSingleton then
+        tClassMT.__singleton_instance = oInstance
     end
 
     return oInstance
@@ -641,6 +653,13 @@ function ClassLib.Destroy(oInstance, ...)
     end
     tClassMT.__instances = tNewList
     tClassMT.__instances_map[oInstance:GetID()] = nil
+
+    -- Clear singleton
+    if ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Singleton) then
+        if tClassMT.__singleton_instance == oInstance then
+            tClassMT.__singleton_instance = nil
+        end
+    end
 
     if Server then
         if tClassMT.__broadcast_destruction then
