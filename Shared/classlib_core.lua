@@ -126,14 +126,26 @@ function ClassLib.GetClassByName(sClassName)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns the name of a class
----@param oClass table @The class
+---Returns the name of a class or of an instance
+---@param oInput table @The class
 ---@return string? @The name of the class
-function ClassLib.GetClassName(oClass)
-    local tMT = getmetatable(oClass)
+function ClassLib.GetClassName(oInput)
+    local tMT = getmetatable(oInput)
     if not tMT then return end
 
     return tMT.__classname
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns the flags of a class
+---@param oClass table @The class
+---@return number? @The flags
+---@see ClassLib.FL
+function ClassLib.GetClassFlags(oClass)
+    local tMT = getmetatable(oClass)
+    if not tMT then return end
+
+    return tMT.__flags
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
