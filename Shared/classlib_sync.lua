@@ -153,15 +153,14 @@ if Server then
     ---`🔹 Server`<br>
     ---Adds a player to replicate an instance to
     ---@param oInstance table @The instance to add the player to
-    ---@param xPly Player|"*" @The player to add, or "*" for all
+    ---@param xPly Player|"*"|table<Player> @The player to add, or "*" for all, or an array of players
     ---@return boolean @Whether the player was added (false if the player wasn't added, or if "*" was passed on an already replicated to all instance)
     function ClassLib.AddReplicatedPlayer(oInstance, xPly)
         if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
-        local tMT = getmetatable(oInstance)
-
         -- Replicate to all
         if (xPly == "*") then
+            local tMT = getmetatable(oInstance)
             if tMT.__replicate_to_all then return false end
 
             tMT.__replicate_to_all = true
@@ -171,10 +170,18 @@ if Server then
             return true
         end
 
+        -- Replicate to multiple players
+        if (type(xPly) == "table") then
+            for _, p in ipairs(xPly) do
+                ClassLib.AddReplicatedPlayer(oInstance, p)
+            end
+        end
+
         -- Replicate to single player
         if ClassLib.IsReplicatedTo(oInstance, xPly) then return false end
         if (getmetatable(xPly) ~= Player) then return false end
 
+        local tMT = getmetatable(oInstance)
         tMT.__replicate_to_all = false
         tMT.__replicated_players[xPly] = true
 
@@ -187,15 +194,14 @@ if Server then
     ---`🔹 Server`<br>
     ---Removes a player from replicating an instance to
     ---@param oInstance table @The instance to remove the player from
-    ---@param pPly Player|"*" @The player to remove, or "*" for all
+    ---@param xPly Player|"*"|table<Player> @The player to remove, or "*" for all, or an array of players
     ---@return boolean @Whether the player was removed (false if the player wasn't removed or "*" was passed on an instance already replicated to everyone)
-    function ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
+    function ClassLib.RemoveReplicatedPlayer(oInstance, xPly)
         if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
-        local tMT = getmetatable(oInstance)
-
         -- Desync all
-        if (pPly == "*") then
+        if (xPly == "*") then
+            local tMT = getmetatable(oInstance)
             if tMT.__replicate_to_all then
                 tMT.__replicate_to_all = false
                 tMT.__replicated_players = {}
@@ -212,16 +218,24 @@ if Server then
             end
         end
 
+        -- Desync multiple players
+        if (type(xPly) == "table") then
+            for _, p in ipairs(xPly) do
+                ClassLib.RemoveReplicatedPlayer(oInstance, p)
+            end
+        end
+
         -- Desync single player
-        if not ClassLib.IsReplicatedTo(oInstance, pPly) then return false end
+        if not ClassLib.IsReplicatedTo(oInstance, xPly) then return false end
 
-        tMT.__replicated_players[pPly] = nil
+        local tMT = getmetatable(oInstance)
+        tMT.__replicated_players[xPly] = nil
 
-        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, pPly, false)
-        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, false)
+        ClassLib.Call(ClassLib.GetClass(oInstance), "ReplicatedPlayerChange", oInstance, xPly, false)
+        ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, xPly, false)
 
-        if pPly:IsValid() then
-            ClassLib.SyncInstanceDestroy(oInstance, pPly)
+        if xPly:IsValid() then
+            ClassLib.SyncInstanceDestroy(oInstance, xPly)
         end
         return true
     end
