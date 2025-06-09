@@ -51,14 +51,12 @@ if Server then
 end
 
 if Client then
-    Events.SubscribeRemote(ClassLib.EventMap.Constructor, function(sClassName, iID, tBroadcastedValues)
+    Events.SubscribeRemote(ClassLib.EventMap.Constructor, function(sClassName, iID, tValues)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
         local oInstance = tClass.GetByID(iID) or ClassLib.NewInstance(tClass, iID)
-        getmetatable(oInstance).__server_authority = true
-
-        for sKey, xValue in pairs(tBroadcastedValues) do
+        for sKey, xValue in pairs(tValues) do
             ClassLib.SetValue(oInstance, sKey, xValue, true)
         end
     end)
@@ -79,20 +77,20 @@ if Server then
     ---Gets the players to replicate an instance to
     ---@param oInstance table @The instance to get
     ---@return table<Player> @The players to replicate the instance to
+    ---@return boolean @Whether the instance is replicated to **everyone**
     function ClassLib.GetReplicatedPlayers(oInstance)
         local tMT = getmetatable(oInstance)
-        if not tMT then return {} end
+        if not tMT then return {}, false end
 
         if tMT.__replicate_to_all then
-            return Player.GetAll()
+            return Player.GetAll(), true
         end
 
         local tList = {}
         for pPly, _ in pairs(tMT.__replicated_players or {}) do
             tList[#tList + 1] = pPly
         end
-
-        return tList
+        return tList, false
     end
 
     ---`🔹 Server`<br>
