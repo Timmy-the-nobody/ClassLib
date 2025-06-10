@@ -23,7 +23,7 @@ if Server then
 
         local sClass = oInstance:GetClassName()
         local iID = oInstance:GetID()
-        local tValues = getmetatable(oInstance).__broadcasted_values
+        local tValues = getmetatable(oInstance).__sync_values
 
         if (getmetatable(pPly) == Player) then
             Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tValues)
@@ -73,6 +73,21 @@ end
 ----------------------------------------------------------------------
 
 if Server then
+    local tAllPlayers = {}
+    Player.Subscribe("Spawn", function(pPly)
+        tAllPlayers[#tAllPlayers + 1] = pPly
+    end)
+
+    Player.Subscribe("Destroy", function(pPly)
+        local tNewPlayers = {}
+        for i = 1, #tAllPlayers do
+            if (tAllPlayers[i] ~= pPly) then
+                tNewPlayers[#tNewPlayers + 1] = tAllPlayers[i]
+            end
+        end
+        tAllPlayers = tNewPlayers
+    end)
+
     ---`🔹 Server`<br>
     ---Gets the players to replicate an instance to
     ---@param oInstance table @The instance to get
@@ -83,7 +98,7 @@ if Server then
         if not tMT then return {}, false end
 
         if tMT.__replicate_to_all then
-            return Player.GetAll(), true
+            return tAllPlayers, true
         end
 
         local tList = {}
