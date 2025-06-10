@@ -147,7 +147,7 @@ elseif Server then
     end
 
     ---`🔹 Server`<br>
-    ---Broadcasts a remote event from the server to all connected clients
+    ---Broadcasts a remote event from the server to all players
     ---@param oInstance table @The object to broadcast the event on
     ---@param sEvent string @The name of the event to broadcast
     ---@param ... any @The arguments to pass to the event

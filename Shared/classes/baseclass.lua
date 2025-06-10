@@ -296,7 +296,7 @@ elseif Server then
     end
 
     ---`🔹 Server`<br>
-    ---Broadcast a remote event from the server to all clients
+    ---Broadcast a remote event from the server to all players
     ---@param sEvent string @The name of the event to broadcast
     ---@param ... any @The arguments to pass to the event
     function BaseClass:BroadcastRemote(sEvent, ...)
@@ -308,9 +308,9 @@ end
 ---Sets a key/value on the instance
 ---@param sKey string @Key
 ---@param xValue any @Value
----@param bBroadcast? boolean @Whether to broadcast the key/value to all clients (server only)
-function BaseClass:SetValue(sKey, xValue, bBroadcast)
-    return ClassLib.SetValue(self, sKey, xValue, bBroadcast)
+---@param bSync? boolean @Whether to broadcast the key/value to all replicated players (server only)
+function BaseClass:SetValue(sKey, xValue, bSync)
+    return ClassLib.SetValue(self, sKey, xValue, bSync)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -324,10 +324,10 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns all values of the instance set by `SetValue`
----@param bBroadcastedOnly? boolean @Whether to only return broadcasted values
+---@param bSyncedOnly? boolean @Whether to only return broadcasted values
 ---@return table<string, any> @All values
-function BaseClass:GetAllValuesKeys(bBroadcastedOnly)
-    return ClassLib.GetAllValuesKeys(self, bBroadcastedOnly)
+function BaseClass:GetAllValuesKeys(bSyncedOnly)
+    return ClassLib.GetAllValuesKeys(self, bSyncedOnly)
 end
 
 if Server then
@@ -342,6 +342,7 @@ if Server then
     ---`🔹 Server`<br>
     ---Gets the players to replicate the instance to
     ---@return table<Player> @The players to replicate the instance to
+    ---@return boolean @Whether the instance is replicated to **everyone**
     function BaseClass:GetReplicatedPlayers()
         return ClassLib.GetReplicatedPlayers(self)
     end

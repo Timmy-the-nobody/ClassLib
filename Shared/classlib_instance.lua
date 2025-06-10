@@ -76,7 +76,7 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     tNewMT.__is_valid = true
     tNewMT.__events = {}
     tNewMT.__values = {}
-    tNewMT.__broadcasted_values = {}
+    tNewMT.__sync_values = {}
     tNewMT.__replicated_players = {}
     tNewMT.__destroy_for_unsynced = true
     tNewMT.__classlib_instance = true
@@ -212,9 +212,10 @@ end
 ---@param oInstance table @The instance to set the value on
 ---@param sKey string @The key to set the value on
 ---@param xValue any @The value to set
----@param bBroadcast? boolean @Server: Whether to broadcast the value change, Client: Mark the value as broadcasted
+---@param bSync? boolean @Server: Whether to sync the value change, Client: Mark the value as broadcasted
 ---@return boolean? @Return true if the value was set, nil otherwise
-function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
+function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
+    assert(ClassLib.IsClassLibInstance(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
     assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
     assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
     assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
@@ -225,32 +226,31 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bBroadcast)
     xValue = ClassLib.SerializeValue(xValue)
     local xOldValue = tMT.__values[sKey]
 
+    local tClass = ClassLib.GetClass(oInstance)
+
     -- Handle ID change
     if (sKey == "id") then
         assert((type(xValue) == "number"), "[ClassLib] The ID passed to ClassLib.SetValue is not a number")
         assert((math.floor(xValue) == xValue), "[ClassLib] The ID passed to ClassLib.SetValue is not an integer")
 
-        local tClass = oInstance:GetClass()
-        if tClass then
-            local tClassMT = getmetatable(tClass)
-            if tClassMT and tClassMT.__instances_map then
-                local iOldID = ClassLib.GetValue(oInstance, "id")
-                if iOldID then
-                    tClassMT.__instances_map[iOldID] = nil
-                end
-                tClassMT.__instances_map[xValue] = oInstance
+        local tClassMT = getmetatable(tClass)
+        if tClassMT and tClassMT.__instances_map then
+            local iOldID = ClassLib.GetValue(oInstance, "id")
+            if iOldID then
+                tClassMT.__instances_map[iOldID] = nil
             end
+            tClassMT.__instances_map[xValue] = oInstance
         end
     end
 
     oInstance[sKey] = xValue
     tMT.__values[sKey] = xValue
 
-    ClassLib.Call(ClassLib.GetClass(oInstance), "ValueChange", oInstance, sKey, xValue, xOldValue)
+    ClassLib.Call(tClass, "ValueChange", oInstance, sKey, xValue, xOldValue)
     ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue, xOldValue)
 
-    if bBroadcast and Server then
-        tMT.__broadcasted_values[sKey] = xValue
+    if bSync and Server then
+        tMT.__sync_values[sKey] = xValue
 
         if tMT.__replicate_to_all then
             Events.BroadcastRemote(ClassLib.EventMap.SetValue, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
@@ -298,15 +298,15 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Gets all values from an instance
 ---@param oInstance table @The instance to get the values from
----@param bBroadcastedOnly? boolean @Whether to only get broadcasted values
+---@param bSyncedOnly? boolean @Whether to only get broadcasted values
 ---@return table @Table with the key as key and the value as value
-function ClassLib.GetAllValuesKeys(oInstance, bBroadcastedOnly)
+function ClassLib.GetAllValuesKeys(oInstance, bSyncedOnly)
     assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to get all values from an invalid object")
 
     local tMT = getmetatable(oInstance)
     if not tMT then return {} end
 
-    if bBroadcastedOnly then return tMT.__broadcasted_values end
+    if bSyncedOnly then return tMT.__sync_values end
     return tMT.__values
 end
 
@@ -321,7 +321,7 @@ if Server then
 
         local tMT = getmetatable(oInstance)
         if not tMT then return false end
-        return tMT.__broadcasted_values[sKey] ~= nil
+        return tMT.__sync_values[sKey] ~= nil
     end
 end
 
