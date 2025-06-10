@@ -207,6 +207,21 @@ end
 -- Instance values
 ----------------------------------------------------------------------
 
+---Internally used by `SetValue` to handle instances ID changes
+local function handleIDChange(oInstance, tClass, iNewID)
+    assert((type(iNewID) == "number"), "[ClassLib] The ID passed to ClassLib.SetValue is not a number")
+    assert((math.floor(iNewID) == iNewID), "[ClassLib] The ID passed to ClassLib.SetValue is not an integer")
+
+    local tClassMT = getmetatable(tClass)
+    if tClassMT and tClassMT.__instances_map then
+        local iOldID = ClassLib.GetValue(oInstance, "id")
+        if iOldID then
+            tClassMT.__instances_map[iOldID] = nil
+        end
+        tClassMT.__instances_map[iNewID] = oInstance
+    end
+end
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Sets a value on an instance
 ---@param oInstance table @The instance to set the value on
@@ -215,8 +230,7 @@ end
 ---@param bSync? boolean @Server: Whether to sync the value change, Client: Mark the value as broadcasted
 ---@return boolean? @Return true if the value was set, nil otherwise
 function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
-    assert(ClassLib.IsClassLibInstance(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
+    assert(ClassLib.IsClassLibInstance(oInstance) and oInstance:IsValid(), "[ClassLib] Attempt to set a value on an invalid object")
     assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
     assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
 
@@ -227,20 +241,10 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
     local xOldValue = tMT.__values[sKey]
 
     local tClass = ClassLib.GetClass(oInstance)
+    if not tClass then return end
 
-    -- Handle ID change
     if (sKey == "id") then
-        assert((type(xValue) == "number"), "[ClassLib] The ID passed to ClassLib.SetValue is not a number")
-        assert((math.floor(xValue) == xValue), "[ClassLib] The ID passed to ClassLib.SetValue is not an integer")
-
-        local tClassMT = getmetatable(tClass)
-        if tClassMT and tClassMT.__instances_map then
-            local iOldID = ClassLib.GetValue(oInstance, "id")
-            if iOldID then
-                tClassMT.__instances_map[iOldID] = nil
-            end
-            tClassMT.__instances_map[xValue] = oInstance
-        end
+        handleIDChange(oInstance, tClass, xValue)
     end
 
     oInstance[sKey] = xValue
@@ -250,14 +254,17 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
     ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue, xOldValue)
 
     if bSync and Server then
+        local sClassName = tClass.GetClassName()
+        local iID = oInstance:GetID()
+
         tMT.__sync_values[sKey] = xValue
 
         if tMT.__replicate_to_all then
-            Events.BroadcastRemote(ClassLib.EventMap.SetValue, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
+            Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xValue)
         else
             for pPly, tInfo in pairs(tMT.__replicated_players) do
                 if pPly:IsValid() then
-                    Events.CallRemote(ClassLib.EventMap.SetValue, pPly, oInstance:GetClassName(), oInstance:GetID(), sKey, xValue)
+                    Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xValue)
                 end
             end
         end
