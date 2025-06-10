@@ -95,6 +95,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     function oNewClass.GetCount()               return #tClassMT.__instances end
     function oNewClass.GetByID(iID)             return tClassMT.__instances_map[iID] end
     function oNewClass.GetParentClass()         return ClassLib.Super(oNewClass) end
+    function oNewClass.GetClassName()           return ClassLib.GetClassName(oNewClass) end
     function oNewClass.GetAllParentClasses()    return ClassLib.SuperAll(oNewClass) end
     function oNewClass.IsChildOf(oClass)        return ClassLib.IsA(oNewClass, oClass, true) end
     function oNewClass.Inherit(...)             return ClassLib.Inherit(oNewClass, ...) end
