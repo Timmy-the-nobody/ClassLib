@@ -113,15 +113,18 @@ function ClassLib.Destroy(oInstance, ...)
     local oClass = ClassLib.GetClass(oInstance)
     assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
 
+    local tMT = getmetatable(oInstance)
+    if tMT.__destroyed then return end
+
+    tMT.__destroyed = true
+    tMT.__is_being_destroyed = true
+
     -- Call class destructor
     if rawget(oClass, "Destructor") then
         -- If the destructor returns false, don't destroy the instance
         local bShouldDestroy = rawget(oClass, "Destructor")(oInstance, ...)
         if (bShouldDestroy == false) then return end
     end
-
-    local tMT = getmetatable(oInstance)
-    tMT.__is_being_destroyed = true
 
     ClassLib.Call(oClass, "Destroy", oInstance)
     ClassLib.Call(oInstance, "Destroy", oInstance)
@@ -353,7 +356,7 @@ function ClassLib.IsValid(oInstance)
     if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
     local tMT = getmetatable(oInstance)
-    return (tMT.__is_valid ~= nil)
+    return ((tMT.__is_valid ~= nil) and not tMT.__destroyed)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
