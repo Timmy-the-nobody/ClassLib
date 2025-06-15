@@ -113,10 +113,8 @@ function ClassLib.Destroy(oInstance, ...)
     local oClass = ClassLib.GetClass(oInstance)
     assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
 
+    local iID = oInstance:GetID()
     local tMT = getmetatable(oInstance)
-    if tMT.__destroyed then return end
-
-    tMT.__destroyed = true
     tMT.__is_being_destroyed = true
 
     -- Call class destructor
@@ -138,7 +136,7 @@ function ClassLib.Destroy(oInstance, ...)
         end
     end
     tClassMT.__instances = tNewList
-    tClassMT.__instances_map[oInstance:GetID()] = nil
+    tClassMT.__instances_map[iID] = nil
 
     -- Clear singleton
     if ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Singleton) then
@@ -161,7 +159,9 @@ function ClassLib.Destroy(oInstance, ...)
     tMT.__is_valid = nil
     tMT.__is_being_destroyed = nil
 
-    function tMT:__newindex() error("[ClassLib] Attempt to set a value on a destroyed object") end
+    function tMT:__newindex()
+        error("[ClassLib] Attempt to set a value on a destroyed object")
+    end
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -356,7 +356,7 @@ function ClassLib.IsValid(oInstance)
     if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
     local tMT = getmetatable(oInstance)
-    return ((tMT.__is_valid ~= nil) and not tMT.__destroyed)
+    return (tMT.__is_valid and not tMT.__is_being_destroyed)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
