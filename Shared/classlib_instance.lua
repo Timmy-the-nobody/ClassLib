@@ -356,7 +356,7 @@ function ClassLib.IsValid(oInstance)
     if not ClassLib.IsClassLibInstance(oInstance) then return false end
 
     local tMT = getmetatable(oInstance)
-    return (tMT.__is_valid and not tMT.__is_being_destroyed)
+    return tMT and tMT.__is_valid
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
