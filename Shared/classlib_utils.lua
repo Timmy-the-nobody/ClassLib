@@ -35,17 +35,31 @@ end
 ---Serializes a value to be sent over the network
 ---@param xVal any @The value to serialize
 ---@return any @The serialized value
-function ClassLib.SerializeValue(xVal)
+function ClassLib.SerializeValue(xVal, tSeen)
+    tSeen = tSeen or {}
+    local sType = type(xVal)
+
+    -- Prevent infinite recursion on circular references
+    if (sType == "table") and tSeen[xVal] then return end
+
     if ClassLib.IsClassLibInstance(xVal) then
         if Client and ClassLib.HasAuthority(xVal) then return end
-        return {__classlib = true, c = xVal:GetClassName(), i = xVal:GetID()}
+        return {__clib = true, c = xVal:GetClassName(), i = xVal:GetID()}
+
     elseif (type(xVal) == "table") then
+        tSeen[xVal] = true
+
         local tRes = {}
-        for i, j in pairs(xVal) do tRes[i] = ClassLib.SerializeValue(j) end
+        for k, v in pairs(xVal) do
+            local xK = ClassLib.SerializeValue(k, tSeen)
+            if (xK ~= nil) then
+                tRes[xK] = ClassLib.SerializeValue(v, tSeen)
+            end
+        end
         return tRes
-    else
-        return xVal
     end
+
+    return xVal
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -66,7 +80,7 @@ end
 ---@return any @The deserialized value
 function ClassLib.ParseValue(xVal)
     if (type(xVal) == "table") then
-        if xVal.__classlib then
+        if xVal.__clib then
             local tClass = ClassLib.GetClassByName(xVal.c)
             if not tClass then return end
             return getmetatable(tClass).__instances_map[xVal.i]
