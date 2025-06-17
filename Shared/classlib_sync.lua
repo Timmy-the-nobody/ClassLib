@@ -15,7 +15,7 @@ local ipairs = ipairs
 
 if Server then
     ---`🔹 Server`<br>
-    ---Internal function to sync the creation of an instance, you shouldn't call this directly
+    ---Internal function to sync instance creation, not intended to be called directly.
     ---@param oInstance table @The instance to sync
     ---@param pPly Player? @The player to send the sync to, nil to broadcast to all players
     function ClassLib.SyncInstanceConstruct(oInstance, pPly)
@@ -23,12 +23,14 @@ if Server then
 
         local sClass = oInstance:GetClassName()
         local iID = oInstance:GetID()
-        local tValues = ClassLib.SerializeValue(getmetatable(oInstance).__sync_values)
+        local tValues = getmetatable(oInstance).__sync_values
+        local tSerVal = ClassLib.SerializeValue(tValues)
 
-        if (getmetatable(pPly) == Player) then
-            Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, table.unpack(tValues))
+        if pPly and (getmetatable(pPly) == Player) then
+            if not pPly:IsValid() then return end
+            Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tSerVal)
         else
-            Events.BroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, table.unpack(tValues))
+            Events.BroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, tSerVal)
         end
     end
 
