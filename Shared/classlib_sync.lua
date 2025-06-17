@@ -23,12 +23,12 @@ if Server then
 
         local sClass = oInstance:GetClassName()
         local iID = oInstance:GetID()
-        local tValues = getmetatable(oInstance).__sync_values
+        local tValues = ClassLib.SerializeValue(getmetatable(oInstance).__sync_values)
 
         if (getmetatable(pPly) == Player) then
-            Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tValues)
+            Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, table.unpack(tValues))
         else
-            Events.BroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, tValues)
+            Events.BroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, table.unpack(tValues))
         end
     end
 
@@ -56,7 +56,7 @@ if Client then
         if not tClass then return end
 
         local oInstance = tClass.GetByID(iID) or ClassLib.NewInstance(tClass, iID)
-        for sKey, xValue in pairs(tValues) do
+        for sKey, xValue in pairs(ClassLib.ParseValue(tValues)) do
             ClassLib.SetValue(oInstance, sKey, xValue, true)
         end
     end)
