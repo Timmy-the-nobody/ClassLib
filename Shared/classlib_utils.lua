@@ -23,10 +23,12 @@ ClassLib.FL = {
 
 -- Metatables that should not be traversed during (de)serialization (nanos world already does this for us)
 local tSafeMetatables = {
-    [Vector] = true,
     [Color] = true,
-    [Rotator] = true,
+    [Matrix] = true,
     [Quat] = true,
+    [Rotator] = true,
+    [Vector] = true,
+    [Vector2D] = true,
 }
 
 ---`🔸 Client`<br>`🔹 Server`<br>
