@@ -21,6 +21,14 @@ ClassLib.FL = {
     -- 16, 32, 64, 128, 256, 512, etc..
 }
 
+-- Metatables that should not be traversed during (de)serialization (nanos world already does this for us)
+local tSafeMetatables = {
+    [Vector] = true,
+    [Color] = true,
+    [Rotator] = true,
+    [Quat] = true,
+}
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if a flag is set on a value
 ---@param iFlags number @The value to check
@@ -46,7 +54,7 @@ function ClassLib.SerializeValue(xVal, tSeen)
         if Client and ClassLib.HasAuthority(xVal) then return end
         return {__clib = true, c = xVal:GetClassName(), i = xVal:GetID()}
 
-    elseif (type(xVal) == "table") then
+    elseif (type(xVal) == "table") and not tSafeMetatables[getmetatable(xVal)] then
         tSeen[xVal] = true
 
         local tRes = {}
@@ -79,7 +87,7 @@ end
 ---@param xVal any @The value to deserialize
 ---@return any @The deserialized value
 function ClassLib.ParseValue(xVal)
-    if (type(xVal) == "table") then
+    if (type(xVal) == "table") and not tSafeMetatables[getmetatable(xVal)] then
         if xVal.__clib then
             local tClass = ClassLib.GetClassByName(xVal.c)
             if not tClass then return end
