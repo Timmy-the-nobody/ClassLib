@@ -16,7 +16,7 @@
     # whether to load all level entities on client - only enable it if your package needs to use level static meshes entities
     load_level_entities =   false
     # the game version (major.minor) at the time this package was created, for granting compatibility between breaking changes
-    compatibility_version = "1.78"
+    compatibility_version = "1.83"
     # packages requirements
     packages_requirements = [
                             
