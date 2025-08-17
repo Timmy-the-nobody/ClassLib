@@ -60,8 +60,8 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
 
     assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
 
-    local bSync = ClassLib.HasFlag(iFlags, ClassLib.FL.Replicated)
-    local bUseGlobalPool = (not bSync) and ClassLib.HasFlag(iFlags, ClassLib.FL.GlobalPool)
+    local bReplicateToAll = ClassLib.HasFlag(iFlags, ClassLib.FL.Replicated)
+    local bUseGlobalPool = (not bReplicateToAll) and ClassLib.HasFlag(iFlags, ClassLib.FL.GlobalPool)
 
     local tFromMT = getmetatable(oInheritFrom)
 
@@ -81,7 +81,7 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     tNewMT.__last_id = 0
     tNewMT.__last_client_id = 0
     tNewMT.__use_global_pool = bUseGlobalPool
-    tNewMT.__broadcast_creation = bSync
+    tNewMT.__replicate_to_all = bReplicateToAll
     tNewMT.__inherited_classes = {}
     tNewMT.__flags = (iFlags or 0)
     tNewMT.__singleton_instance = nil

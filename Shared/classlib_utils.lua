@@ -13,6 +13,7 @@ local getmetatable = getmetatable
 ---- `Replicated` (1) - Replicate the instance to all players by default<br>
 ---- `GlobalPool` (2) - Use a shared ID space (usefull for instances created on the shared-side without any sync, keeps consistent IDs between server/client)
 ---- `Singleton` (3) - Only allow one instance of the class to exist at a time
+---- `ServerAuthority` (4) - Only allow the server to create instances of the class
 ClassLib.FL = {
     Replicated = 1,
     GlobalPool = 2,
@@ -56,6 +57,9 @@ function ClassLib.SerializeValue(xVal, tSeen)
         if Client and ClassLib.HasAuthority(xVal) then return end
         return {__clib = true, c = xVal:GetClassName(), i = xVal:GetID()}
 
+    elseif NanosUtils.IsEntityValid(xVal) then
+        return xVal
+
     elseif (type(xVal) == "table") and not tSafeMetatables[getmetatable(xVal)] then
         tSeen[xVal] = true
 
@@ -89,6 +93,10 @@ end
 ---@param xVal any @The value to deserialize
 ---@return any @The deserialized value
 function ClassLib.ParseValue(xVal)
+    if NanosUtils.IsEntityValid(xVal) then
+        return xVal
+    end
+
     if (type(xVal) == "table") and not tSafeMetatables[getmetatable(xVal)] then
         if xVal.__clib then
             local tClass = ClassLib.GetClassByName(xVal.c)
