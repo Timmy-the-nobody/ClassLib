@@ -249,8 +249,6 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
         handleIDChange(oInstance, tClass, xValue)
     end
 
-    xValue = ClassLib.SerializeValue(xValue)
-
     oInstance[sKey] = xValue
     tMT.__values[sKey] = xValue
 
@@ -258,17 +256,18 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
     ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue, xOldValue)
 
     if bSync and Server then
+        local xSerialized = ClassLib.SerializeValue(xValue)
         local sClassName = tClass.GetClassName()
         local iID = oInstance:GetID()
 
         tMT.__sync_values[sKey] = xValue
 
         if tMT.__replicate_to_all then
-            Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xValue)
+            Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
         else
             for pPly, tInfo in pairs(tMT.__replicated_players) do
                 if pPly:IsValid() then
-                    Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xValue)
+                    Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xSerialized)
                 end
             end
         end
