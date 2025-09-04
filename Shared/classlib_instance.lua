@@ -439,7 +439,7 @@ function ClassLib.Unbind(oInstance)
         tMT.__bind.target:Unsubscribe("Destroy", tMT.__bind.target_destroy_ev)
     end
 
-    oInstance:Unsubscribe(tMT.__bind.self_destroy_ev)
+    oInstance:Unsubscribe("Destroy", tMT.__bind.self_destroy_ev)
     tMT.__bind = nil
     return true
 end
