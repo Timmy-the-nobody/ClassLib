@@ -43,7 +43,6 @@ local tCopyFromParentClassOnInherit = {
 
 -- Class creation/lookup
 ----------------------------------------------------------------------
-
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from the passed class
 ---@param oInheritFrom table @The class to inherit from
@@ -163,7 +162,6 @@ end
 
 -- Inheritance resolution
 ----------------------------------------------------------------------
-
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the class from which an object inherits
 ---@param oInput table @The object

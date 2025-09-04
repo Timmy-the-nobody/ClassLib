@@ -436,7 +436,7 @@ function ClassLib.Unbind(oInstance)
     if not tMT or not tMT.__bind then return false end
 
     if tMT.__bind.target and tMT.__bind.target:IsValid() then
-        tMT.__bind.target:Unsubscribe(tMT.__bind.target_destroy_ev)
+        tMT.__bind.target:Unsubscribe("Destroy", tMT.__bind.target_destroy_ev)
     end
 
     oInstance:Unsubscribe(tMT.__bind.self_destroy_ev)
