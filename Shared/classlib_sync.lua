@@ -10,6 +10,8 @@ local getmetatable = getmetatable
 local pairs = pairs
 local ipairs = ipairs
 
+local ClassLib = ClassLib
+
 -- Sync
 ----------------------------------------------------------------------
 
@@ -189,9 +191,13 @@ if Server then
 
         -- Replicate to multiple players
         if (type(xPly) == "table") then
+            local bChanged = false
             for _, p in ipairs(xPly) do
-                ClassLib.AddReplicatedPlayer(oInstance, p)
+                if ClassLib.AddReplicatedPlayer(oInstance, p) then
+                    bChanged = true
+                end
             end
+            return bChanged
         end
 
         -- Replicate to single player
