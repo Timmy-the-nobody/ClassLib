@@ -41,6 +41,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Called when the instance is about to be destroyed, return `false` to cancel the destruction
+---@return boolean @Return `false` to cancel the destruction
 function BaseClass:Destructor()
 end
 

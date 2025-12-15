@@ -5,7 +5,7 @@
     # contributors
     author =                "Timmy"
     # version
-    version =               "1.13.4"
+    version =               "1.13.5"
 
 # script configurations
 [script]
@@ -16,7 +16,7 @@
     # whether to load all level entities on client - only enable it if your package needs to use level static meshes entities
     load_level_entities =   false
     # the game version (major.minor) at the time this package was created, for granting compatibility between breaking changes
-    compatibility_version = "1.94"
+    compatibility_version = "1.98"
     # packages requirements
     packages_requirements = [
                             

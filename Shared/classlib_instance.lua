@@ -115,7 +115,6 @@ function ClassLib.Destroy(oInstance, ...)
 
     local iID = oInstance:GetID()
     local tMT = getmetatable(oInstance)
-    tMT.__is_being_destroyed = true
 
     -- Call class destructor
     if rawget(oClass, "Destructor") then
@@ -123,9 +122,6 @@ function ClassLib.Destroy(oInstance, ...)
         local bShouldDestroy = rawget(oClass, "Destructor")(oInstance, ...)
         if (bShouldDestroy == false) then return end
     end
-
-    ClassLib.Call(oClass, "Destroy", oInstance)
-    ClassLib.Call(oInstance, "Destroy", oInstance)
 
     -- Clears the instance from it's class instance table
     local tClassMT = getmetatable(oClass)
@@ -145,6 +141,15 @@ function ClassLib.Destroy(oInstance, ...)
         end
     end
 
+    -- Call destroy events
+    ClassLib.Call(oClass, "Destroy", oInstance)
+    ClassLib.Call(oInstance, "Destroy", oInstance)
+
+    -- Mark as being destroyed after destructor/events
+    tMT.__is_being_destroyed = true
+    tMT.__is_valid = nil
+
+    -- Network destroy
     if Server then
         if tClassMT.__broadcast_destruction then
             ClassLib.SyncInstanceDestroy(oInstance)
@@ -155,10 +160,7 @@ function ClassLib.Destroy(oInstance, ...)
         end
     end
 
-    -- Prevent access to the instance
-    tMT.__is_valid = nil
-    tMT.__is_being_destroyed = nil
-
+    -- Override newindex to prevent further changes
     function tMT:__newindex()
         error("[ClassLib] Attempt to set a value on a destroyed object")
     end
