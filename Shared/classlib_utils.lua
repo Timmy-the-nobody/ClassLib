@@ -15,11 +15,10 @@ local getmetatable = getmetatable
 ---- `Singleton` (3) - Only allow one instance of the class to exist at a time
 ---- `ServerAuthority` (4) - Only allow the server to create instances of the class
 ClassLib.FL = {
-    Replicated = 1,
-    GlobalPool = 2,
-    Singleton = 4,
-    ServerAuthority = 8
-    -- 16, 32, 64, 128, 256, 512, etc..
+    Replicated      = 1 << 0,
+    GlobalPool      = 1 << 1,
+    Singleton       = 1 << 2,
+    ServerAuthority = 1 << 3
 }
 
 -- Metatables that should not be traversed during (de)serialization (nanos world already does this for us)
