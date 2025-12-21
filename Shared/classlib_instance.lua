@@ -141,15 +141,13 @@ function ClassLib.Destroy(oInstance, ...)
         end
     end
 
-    -- Call destroy events
+    tMT.__is_being_destroyed = true
+
+    -- Destroy events
     ClassLib.Call(oClass, "Destroy", oInstance)
     ClassLib.Call(oInstance, "Destroy", oInstance)
 
-    -- Mark as being destroyed after destructor/events
-    tMT.__is_being_destroyed = true
-    tMT.__is_valid = nil
-
-    -- Network destroy
+    -- Network destroy (external observers)
     if Server then
         if tClassMT.__broadcast_destruction then
             ClassLib.SyncInstanceDestroy(oInstance)
@@ -159,6 +157,8 @@ function ClassLib.Destroy(oInstance, ...)
             end
         end
     end
+
+    tMT.__is_valid = nil
 
     -- Override newindex to prevent further changes
     function tMT:__newindex()

@@ -36,12 +36,17 @@ if Server then
         end
     end
 
+    local function canSyncDestroy(oInst)
+        local tMT = getmetatable(oInst)
+        return tMT and (tMT.__is_valid or tMT.__is_being_destroyed)
+    end
+
     ---`🔹 Server`<br>
     ---Internal function to sync the destruction of an instance (to all players), you shouldn't call this directly
     ---@param oInstance table @The instance to sync
     ---@param pPly Player? @The player to send the sync to, nil to broadcast to all players
     function ClassLib.SyncInstanceDestroy(oInstance, pPly)
-        assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the destruction of an invalid object")
+        assert(canSyncDestroy(oInstance), "[ClassLib] Attempt to sync the destruction of an invalid object")
 
         local sClass = oInstance:GetClassName()
         local iID = oInstance:GetID()
