@@ -149,7 +149,7 @@ function ClassLib.Destroy(oInstance, ...)
 
     -- Network destroy (external observers)
     if Server then
-        if tClassMT.__replicate_to_all then
+        if tMT.__replicate_to_all then
             ClassLib.SyncInstanceDestroy(oInstance)
         else
             for pPly in pairs(tMT.__replicated_players) do
