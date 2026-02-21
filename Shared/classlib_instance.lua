@@ -193,16 +193,19 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
     assert((type(oClass) == "table"), "[ClassLib] The object passed has no valid class")
 
     local oClone = ClassLib.NewInstance(oClass, nil, ...)
-    local bCheckIgnoredKeys = (type(tIgnoredKeys) == "table")
+
+    local tIgnoredKeysMap
+    if (type(tIgnoredKeys) == "table") then
+        tIgnoredKeysMap = {}
+        for _, sKey in ipairs(tIgnoredKeys) do
+            tIgnoredKeysMap[sKey] = true
+        end
+    end
 
     -- Copy instance properties
     for sKey, xVal in pairs(oInstance) do
         if (sKey == "id") then goto continue end
-        if bCheckIgnoredKeys then
-            for _, sIgnoredKey in ipairs(tIgnoredKeys) do
-                if (sKey == sIgnoredKey) then goto continue end
-            end
-        end
+        if tIgnoredKeysMap and tIgnoredKeysMap[sKey] then goto continue end
         oClone[sKey] = xVal
         ::continue::
     end
@@ -211,11 +214,7 @@ function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
     local tSyncValues = ClassLib.GetAllValuesKeys(oInstance, true)
     for sKey, xVal in pairs(ClassLib.GetAllValuesKeys(oInstance, false)) do
         if (sKey == "id") then goto continue end
-        if bCheckIgnoredKeys then
-            for _, sIgnoredKey in ipairs(tIgnoredKeys) do
-                if (sKey == sIgnoredKey) then goto continue end
-            end
-        end
+        if tIgnoredKeysMap and tIgnoredKeysMap[sKey] then goto continue end
         ClassLib.SetValue(oClone, sKey, xVal, (tSyncValues[sKey] and Server))
         ::continue::
     end
