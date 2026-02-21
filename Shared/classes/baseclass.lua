@@ -137,7 +137,7 @@ end
 ----------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns all instances of this class (copy — safe to iterate while destroying)
+---Returns a copy of the table containing all instances of this class (safe to iterate while destroying)
 ---@return table<integer, table> @Table of all instances of the class
 function BaseClass.GetAll()
     return {}

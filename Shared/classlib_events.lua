@@ -20,12 +20,15 @@ local getmetatable = getmetatable
 function ClassLib.Call(oInput, sEvent, ...)
     local tMT = getmetatable(oInput)
     local tEvents = tMT.__events
+    if not tEvents or not tEvents[sEvent] then return end
 
-    if tEvents and tEvents[sEvent] then
-        for _, fnCallback in ipairs(tEvents[sEvent]) do
-            if (fnCallback(...) == false) then
-                ClassLib.Unsubscribe(oInput, sEvent, fnCallback)
-            end
+    local tSnapshot = {}
+    local tSource = tEvents[sEvent]
+    for i = 1, #tSource do tSnapshot[i] = tSource[i] end
+
+    for _, fnCallback in ipairs(tSnapshot) do
+        if (fnCallback(...) == false) then
+            ClassLib.Unsubscribe(oInput, sEvent, fnCallback)
         end
     end
 end
