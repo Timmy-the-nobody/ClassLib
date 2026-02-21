@@ -89,6 +89,7 @@ if Client then
         Events.CallRemote(ClassLib.EventMap.CLToSV, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
+    local tPendingRemoteWaiters = {}
     Events.SubscribeRemote(ClassLib.EventMap.SVToCL, function(sClassName, iID, sEvent, ...)
         local tClass = ClassLib.__classmap[sClassName]
         if not tClass then return end
@@ -106,17 +107,53 @@ if Client then
             return
         end
 
-        -- Wait for the instance to spawn if it hasn't already
-        tClass.ClassSubscribe("Spawn", function(self)
-            if (self:GetID() == iID) then
-                for _, fnCallback in ipairs(tRemoteEvents[sEvent]) do
-                    fnCallback(self, table.unpack(tArgs))
+        local tByID = tPendingRemoteWaiters[sClassName]
+        if not tByID then
+            tByID = {}
+            tPendingRemoteWaiters[sClassName] = tByID
+        end
+        tByID[iID] = tByID[iID] or {}
+
+        local fnWaiter
+        fnWaiter = tClass.ClassSubscribe("Spawn", function(self)
+            if (self:GetID() ~= iID) then return end
+
+            local tList = tPendingRemoteWaiters[sClassName]
+            if tList and tList[iID] then
+                local tNew = {}
+                for _, fn in ipairs(tList[iID]) do
+                    if (fn ~= fnWaiter) then
+                        tNew[#tNew + 1] = fn
+                    end
                 end
-                return false
+                tList[iID] = (#tNew > 0) and tNew or nil
             end
+
+            for _, fnCallback in ipairs(tRemoteEvents[sEvent]) do
+                fnCallback(self, table.unpack(tArgs))
+            end
+
+            return false
         end)
+
+        tByID[iID][#tByID[iID] + 1] = fnWaiter
     end)
+
+    Events.SubscribeRemote(ClassLib.EventMap.Destructor, function(sClassName, iID)
+        local tByID = tPendingRemoteWaiters[sClassName]
+        if not tByID or not tByID[iID] then return end
+
+        local tClass = ClassLib.__classmap[sClassName]
+        if tClass then
+            for _, fnWaiter in ipairs(tByID[iID]) do
+                tClass.ClassUnsubscribe("Spawn", fnWaiter)
+            end
+        end
+        tByID[iID] = nil
+    end)
+
 elseif Server then
+
     ---`🔹 Server`<br>
     ---Calls a remote event from the server to the client
     ---@param oInstance table @The object to call the event on
