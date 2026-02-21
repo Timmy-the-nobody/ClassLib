@@ -62,6 +62,7 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
 
     local tClassMT = getmetatable(oClass)
     assert(not ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Abstract), ("[ClassLib] Attempt to instantiate abstract class '%s'"):format(tClassMT.__classname))
+    assert(not (Client and not __iSyncID and ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.ServerAuthority)), ("[ClassLib] Attempt to instantiate server-authority class '%s' on the client"):format(tClassMT.__classname))
 
     local bIsSingleton = ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Singleton)
 
