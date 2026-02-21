@@ -255,9 +255,13 @@ if Server then
 
         -- Desync multiple players
         if (type(xPly) == "table") then
-            for _, p in ipairs(xPly) do
-                ClassLib.RemoveReplicatedPlayer(oInstance, p)
+            local bChanged = false
+            for _, pPly in ipairs(xPly) do
+                if ClassLib.RemoveReplicatedPlayer(oInstance, pPly) then
+                    bChanged = true
+                end
             end
+            return bChanged
         end
 
         -- Desync single player
