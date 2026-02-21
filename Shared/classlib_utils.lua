@@ -8,6 +8,8 @@ local type = type
 local pairs = pairs
 local getmetatable = getmetatable
 
+local NanosUtils = NanosUtils
+
 ---@enum ClassLib.FL
 ---Flags used to define the behavior of a class<br>
 ---- `Replicated` (1) - Replicate the instance to all players by default<br>
@@ -18,7 +20,8 @@ ClassLib.FL = {
     Replicated      = 1 << 0,
     GlobalPool      = 1 << 1,
     Singleton       = 1 << 2,
-    ServerAuthority = 1 << 3
+    ServerAuthority = 1 << 3,
+    Abstract        = 1 << 4
 }
 
 -- Metatables that should not be traversed during (de)serialization (nanos world already does this for us)
@@ -28,7 +31,7 @@ local tSafeMetatables = {
     [Quat] = true,
     [Rotator] = true,
     [Vector] = true,
-    [Vector2D] = true,
+    [Vector2D] = true
 }
 
 ---`🔸 Client`<br>`🔹 Server`<br>

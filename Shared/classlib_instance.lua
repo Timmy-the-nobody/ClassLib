@@ -55,6 +55,8 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
     local tClassMT = getmetatable(oClass)
+    assert(not ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Abstract), ("[ClassLib] Attempt to instantiate abstract class '%s'"):format(tClassMT.__classname))
+
     local bIsSingleton = ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Singleton)
 
     if bIsSingleton then
