@@ -137,10 +137,17 @@ end
 ----------------------------------------------------------------------
 
 ---`🔸 Client`<br>`🔹 Server`<br>
----Returns all instances of this class
+---Returns all instances of this class (copy — safe to iterate while destroying)
 ---@return table<integer, table> @Table of all instances of the class
 function BaseClass.GetAll()
     return {}
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns all instances of this class and all of its inherited classes (recursive)
+---@return table<integer, table> @All instances including child classes
+function BaseClass.GetAllInherited()
+    return ClassLib.GetAllInherited(BaseClass)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -312,6 +319,15 @@ end
 ---@param bSync? boolean @Whether to broadcast the key/value to all replicated players (server only)
 function BaseClass:SetValue(sKey, xValue, bSync)
     return ClassLib.SetValue(self, sKey, xValue, bSync)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets multiple key/values on the instance in one call; on the server, syncs all in a
+---single network event instead of one per key
+---@param tKeyValues table<string, any> @Key/value pairs to set
+---@param bSync? boolean @Whether to broadcast all changes to replicated players (server only)
+function BaseClass:SetValues(tKeyValues, bSync)
+    return ClassLib.SetValues(self, tKeyValues, bSync)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>

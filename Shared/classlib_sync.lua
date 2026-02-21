@@ -11,6 +11,9 @@ local pairs = pairs
 local ipairs = ipairs
 
 local ClassLib = ClassLib
+local Events = Events
+local Server = Server
+local Client = Client
 
 -- Sync
 ----------------------------------------------------------------------

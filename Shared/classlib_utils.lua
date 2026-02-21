@@ -8,14 +8,19 @@ local type = type
 local pairs = pairs
 local getmetatable = getmetatable
 
+local ClassLib = ClassLib
 local NanosUtils = NanosUtils
+local Events = Events
+local Server = Server
+local Client = Client
 
 ---@enum ClassLib.FL
 ---Flags used to define the behavior of a class<br>
----- `Replicated` (1) - Replicate the instance to all players by default<br>
----- `GlobalPool` (2) - Use a shared ID space (usefull for instances created on the shared-side without any sync, keeps consistent IDs between server/client)
----- `Singleton` (3) - Only allow one instance of the class to exist at a time
----- `ServerAuthority` (4) - Only allow the server to create instances of the class
+---- `Replicated`      (1)  - Replicate the instance to all players by default<br>
+---- `GlobalPool`      (2)  - Use a shared ID space (usefull for instances created on the shared-side without any sync, keeps consistent IDs between server/client)
+---- `Singleton`       (4)  - Only allow one instance of the class to exist at a time
+---- `ServerAuthority` (8)  - Only allow the server to create instances of the class
+---- `Abstract`        (16) - Do not allow instances of the class to be created
 ClassLib.FL = {
     Replicated      = 1 << 0,
     GlobalPool      = 1 << 1,

@@ -12,6 +12,12 @@ local ipairs = ipairs
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 
+local ClassLib = ClassLib
+local NanosUtils = NanosUtils
+local Events = Events
+local Server = Server
+local Client = Client
+
 -- List of keys to copy from the parent class on new instance
 local tCopyFromClassOnNewInstance = {
     "__newindex",
@@ -300,6 +306,62 @@ if Client then
         if not oInstance then return end
 
         ClassLib.SetValue(oInstance, sKey, ClassLib.ParseValue(xValue), true)
+    end)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets multiple values on an instance in one call; on the server, syncs all changed keys
+---in a single network event instead of one per key
+---@param oInstance table @The instance to set the values on
+---@param tKeyValues table<string, any> @Key/value pairs to set
+---@param bSync? boolean @Server: whether to sync all changes to replicated players
+---@return boolean? @Return true if the values were set, nil otherwise
+function ClassLib.SetValues(oInstance, tKeyValues, bSync)
+    assert(ClassLib.IsClassLibInstance(oInstance) and oInstance:IsValid(), "[ClassLib] Attempt to set values on an invalid object")
+    assert((type(tKeyValues) == "table"), "[ClassLib] The key/values table passed to ClassLib.SetValues is not a table")
+
+    for sKey, xValue in pairs(tKeyValues) do
+        ClassLib.SetValue(oInstance, sKey, xValue, false)
+    end
+
+    if bSync and Server then
+        local tMT = getmetatable(oInstance)
+        local tClass = ClassLib.GetClass(oInstance)
+        if not tClass then return end
+        local sClassName = tClass.GetClassName()
+        local iID = oInstance:GetID()
+        local tSerialized = {}
+
+        for sKey, xValue in pairs(tKeyValues) do
+            tMT.__sync_values[sKey] = xValue
+            tSerialized[sKey] = ClassLib.SerializeValue(xValue)
+        end
+
+        if tMT.__replicate_to_all then
+            Events.BroadcastRemote(ClassLib.EventMap.SetValues, sClassName, iID, tSerialized)
+        else
+            for pPly in pairs(tMT.__replicated_players) do
+                if pPly:IsValid() then
+                    Events.CallRemote(ClassLib.EventMap.SetValues, pPly, sClassName, iID, tSerialized)
+                end
+            end
+        end
+    end
+
+    return true
+end
+
+if Client then
+    Events.SubscribeRemote(ClassLib.EventMap.SetValues, function(sClassName, iID, tValues)
+        local tClass = ClassLib.GetClassByName(sClassName)
+        if not tClass then return end
+
+        local oInstance = tClass.GetByID(iID)
+        if not oInstance then return end
+
+        for sKey, xValue in pairs(ClassLib.ParseValue(tValues)) do
+            ClassLib.SetValue(oInstance, sKey, xValue, true)
+        end
     end)
 end
 

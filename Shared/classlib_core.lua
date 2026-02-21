@@ -24,6 +24,7 @@ ClassLib.EventMap = {
     ["SetValue"] = "%2",
     ["CLToSV"] = "%3",
     ["SVToCL"] = "%4",
+    ["SetValues"] = "%5",
 }
 
 -- List of keys to copy from the parent class on inherit
@@ -90,20 +91,53 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     local tClassMT = getmetatable(oNewClass)
 
     -- Add static functions to the new class
-    function oNewClass.GetAll()                 return tClassMT.__instances end
-    function oNewClass.GetCount()               return #tClassMT.__instances end
-    function oNewClass.GetByID(iID)             return tClassMT.__instances_map[iID] end
-    function oNewClass.GetParentClass()         return ClassLib.Super(oNewClass) end
-    function oNewClass.GetClassName()           return ClassLib.GetClassName(oNewClass) end
-    function oNewClass.GetAllParentClasses()    return ClassLib.SuperAll(oNewClass) end
-    function oNewClass.IsChildOf(oClass)        return ClassLib.IsA(oNewClass, oClass, true) end
-    function oNewClass.Inherit(...)             return ClassLib.Inherit(oNewClass, ...) end
-    function oNewClass.GetInheritedClasses()    return ClassLib.GetInheritedClasses(oNewClass) end
-    function oNewClass.ClassCall(sEvent, ...)   return ClassLib.Call(oNewClass, sEvent, ...) end
-    function oNewClass.ClassSubscribe(...)      return ClassLib.Subscribe(oNewClass, ...) end
-    function oNewClass.ClassUnsubscribe(...)    return ClassLib.Unsubscribe(oNewClass, ...) end
-    function oNewClass.SubscribeRemote(...)     return ClassLib.SubscribeRemote(oNewClass, ...) end
-    function oNewClass.UnsubscribeRemote(...)   return ClassLib.UnsubscribeRemote(oNewClass, ...) end
+    function oNewClass.GetAll()
+        local tAll, tSource = {}, tClassMT.__instances
+        for i = 1, #tSource do tAll[i] = tSource[i] end
+        return tAll
+    end
+    function oNewClass.GetAllInherited()
+        return ClassLib.GetAllInherited(oNewClass)
+    end
+    function oNewClass.GetCount()
+        return #tClassMT.__instances
+    end
+    function oNewClass.GetByID(iID)
+        return tClassMT.__instances_map[iID]
+    end
+    function oNewClass.GetParentClass()
+        return ClassLib.Super(oNewClass)
+    end
+    function oNewClass.GetClassName()
+        return ClassLib.GetClassName(oNewClass)
+    end
+    function oNewClass.GetAllParentClasses()
+        return ClassLib.SuperAll(oNewClass)
+    end
+    function oNewClass.IsChildOf(oClass)
+        return ClassLib.IsA(oNewClass, oClass, true)
+    end
+    function oNewClass.Inherit(...)
+        return ClassLib.Inherit(oNewClass, ...)
+    end
+    function oNewClass.GetInheritedClasses()
+        return ClassLib.GetInheritedClasses(oNewClass)
+    end
+    function oNewClass.ClassCall(sEvent, ...)
+        return ClassLib.Call(oNewClass, sEvent, ...)
+    end
+    function oNewClass.ClassSubscribe(...)
+        return ClassLib.Subscribe(oNewClass, ...)
+    end
+    function oNewClass.ClassUnsubscribe(...)
+        return ClassLib.Unsubscribe(oNewClass, ...)
+    end
+    function oNewClass.SubscribeRemote(...)
+        return ClassLib.SubscribeRemote(oNewClass, ...)
+    end
+    function oNewClass.UnsubscribeRemote(...)
+        return ClassLib.UnsubscribeRemote(oNewClass, ...)
+    end
 
     ClassLib.__classmap[sClassName] = oNewClass
     ClassLib.__classlist[#ClassLib.__classlist + 1] = oNewClass
@@ -116,6 +150,29 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     return oNewClass
 end
 
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns all instances of a class and all of its inherited classes (recursive)
+---@param oClass table @The class
+---@return table<integer, table> @All instances
+function ClassLib.GetAllInherited(oClass)
+    assert(ClassLib.IsClassLibClass(oClass), "[ClassLib] Attempt to get all instances of a non-class value")
+
+    local tResult = {}
+    local tClassMT = getmetatable(oClass)
+
+    for _, oInst in ipairs(tClassMT.__instances) do
+        tResult[#tResult + 1] = oInst
+    end
+
+    for _, oChild in ipairs(tClassMT.__inherited_classes or {}) do
+        for _, oInst in ipairs(ClassLib.GetAllInherited(oChild)) do
+            tResult[#tResult + 1] = oInst
+        end
+    end
+
+    return tResult
+end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns a class object by its name
