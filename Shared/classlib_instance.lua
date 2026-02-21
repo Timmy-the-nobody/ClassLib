@@ -131,11 +131,11 @@ end
 function ClassLib.Destroy(oInstance, ...)
     assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to destroy an invalid object")
 
-    local oClass = ClassLib.GetClass(oInstance)
+    local tMT = getmetatable(oInstance)
+    local oClass = tMT.__index
     assert((type(oClass) == "table"), "[ClassLib] Called ClassLib.Delete without a valid class instance")
 
-    local iID = oInstance:GetID()
-    local tMT = getmetatable(oInstance)
+    local iID = rawget(oInstance, "id")
 
     -- Call class destructor
     if rawget(oClass, "Destructor") then
@@ -255,7 +255,7 @@ end
 ---@param bSync? boolean @Server: Whether to sync the value change, Client: Mark the value as broadcasted
 ---@return boolean? @Return true if the value was set, nil otherwise
 function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
-    assert(ClassLib.IsClassLibInstance(oInstance) and oInstance:IsValid(), "[ClassLib] Attempt to set a value on an invalid object")
+    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
     assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
     assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
 
@@ -264,7 +264,7 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
 
     local xOldValue = tMT.__values[sKey]
 
-    local tClass = ClassLib.GetClass(oInstance)
+    local tClass = tMT.__index
     if not tClass then return end
 
     if (sKey == "id") then
@@ -318,7 +318,7 @@ end
 ---@param bSync? boolean @Server: whether to sync all changes to replicated players
 ---@return boolean? @Return true if the values were set, nil otherwise
 function ClassLib.SetValues(oInstance, tKeyValues, bSync)
-    assert(ClassLib.IsClassLibInstance(oInstance) and oInstance:IsValid(), "[ClassLib] Attempt to set values on an invalid object")
+    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set values on an invalid object")
     assert((type(tKeyValues) == "table"), "[ClassLib] The key/values table passed to ClassLib.SetValues is not a table")
 
     for sKey, xValue in pairs(tKeyValues) do
@@ -431,10 +431,8 @@ end
 ---@param oInstance table @The instance to check
 ---@return boolean @True if the instance is valid, false otherwise
 function ClassLib.IsValid(oInstance)
-    if not ClassLib.IsClassLibInstance(oInstance) then return false end
-
     local tMT = getmetatable(oInstance)
-    return tMT and tMT.__is_valid
+    return (tMT and tMT.__classlib_instance and tMT.__is_valid) and true or false
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
@@ -450,8 +448,8 @@ end
 ---Returns the ID of the instance, unique to the class
 ---@return integer? @Instance ID
 function ClassLib.GetID(oInstance)
-    if (type(oInstance) ~= "table") or not oInstance.GetValue then return end
-    return oInstance:GetValue("id")
+    if (type(oInstance) ~= "table") then return end
+    return rawget(oInstance, "id")
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
