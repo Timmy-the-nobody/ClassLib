@@ -7,6 +7,7 @@
 local type = type
 local pairs = pairs
 local getmetatable = getmetatable
+local select = select
 
 local ClassLib = ClassLib
 local NanosUtils = NanosUtils
@@ -87,9 +88,8 @@ end
 ---@param ... any @The values to serialize
 ---@return table @The serialized values
 function ClassLib.SerializeArgs(...)
-    local n = select('#', ...)
     local tSerialized = {}
-    for i = 1, n do
+    for i = 1, select('#', ...) do
         tSerialized[i] = ClassLib.SerializeValue((select(i, ...)))
     end
     return tSerialized
@@ -124,9 +124,8 @@ end
 ---@param ... any @The values to deserialize
 ---@return table @The deserialized values
 function ClassLib.ParseArgs(...)
-    local n = select('#', ...)
     local tParsed = {}
-    for i = 1, n do
+    for i = 1, select('#', ...) do
         tParsed[i] = ClassLib.ParseValue((select(i, ...)))
     end
     return tParsed

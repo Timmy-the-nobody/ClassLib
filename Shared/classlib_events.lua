@@ -9,6 +9,9 @@ local pairs = pairs
 local ipairs = ipairs
 local getmetatable = getmetatable
 
+local ClassLib = ClassLib
+local Events = Events
+
 -- Local Events
 ---------------------------------------------------------------------
 
