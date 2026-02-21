@@ -87,9 +87,10 @@ end
 ---@param ... any @The values to serialize
 ---@return table @The serialized values
 function ClassLib.SerializeArgs(...)
-    local tArgs, tSerialized = {...}, {}
-    for i = 1, #tArgs do
-        tSerialized[i] = ClassLib.SerializeValue(tArgs[i])
+    local n = select('#', ...)
+    local tSerialized = {}
+    for i = 1, n do
+        tSerialized[i] = ClassLib.SerializeValue((select(i, ...)))
     end
     return tSerialized
 end
@@ -123,9 +124,10 @@ end
 ---@param ... any @The values to deserialize
 ---@return table @The deserialized values
 function ClassLib.ParseArgs(...)
-    local tArgs, tParsed = {...}, {}
-    for i = 1, #tArgs do
-        tParsed[i] = ClassLib.ParseValue(tArgs[i])
+    local n = select('#', ...)
+    local tParsed = {}
+    for i = 1, n do
+        tParsed[i] = ClassLib.ParseValue((select(i, ...)))
     end
     return tParsed
 end
