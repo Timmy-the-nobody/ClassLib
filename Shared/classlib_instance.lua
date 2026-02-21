@@ -87,8 +87,20 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     local iAllocatedID = allocateID(oClass, __iSyncID)
     ClassLib.SetValue(oInstance, "id", iAllocatedID)
 
+    local tSyncInitValues
+    if Client and __iSyncID then
+        tSyncInitValues = ClassLib.__cl_sync_init_values
+        ClassLib.__cl_sync_init_values = nil
+    end
+
     if rawget(oClass, "Constructor") then
         rawget(oClass, "Constructor")(oInstance, ...)
+    end
+
+    if tSyncInitValues then
+        for sKey, xValue in pairs(tSyncInitValues) do
+            ClassLib.SetValue(oInstance, sKey, xValue, true)
+        end
     end
 
     ClassLib.Call(oClass, "Spawn", oInstance)

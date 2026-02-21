@@ -64,9 +64,16 @@ if Client then
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
-        local oInstance = tClass.GetByID(iID) or ClassLib.NewInstance(tClass, iID)
-        for sKey, xValue in pairs(ClassLib.ParseValue(tValues)) do
-            ClassLib.SetValue(oInstance, sKey, xValue, true)
+        local tParsedValues = ClassLib.ParseValue(tValues)
+        local oInstance = tClass.GetByID(iID)
+
+        if not oInstance then
+            ClassLib.__cl_sync_init_values = tParsedValues
+            oInstance = ClassLib.NewInstance(tClass, iID)
+        else
+            for sKey, xValue in pairs(tParsedValues) do
+                ClassLib.SetValue(oInstance, sKey, xValue, true)
+            end
         end
     end)
 
