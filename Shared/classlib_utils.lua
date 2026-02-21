@@ -53,12 +53,8 @@ end
 ---Serializes a value to be sent over the network
 ---@param xVal any @The value to serialize
 ---@return any @The serialized value
-function ClassLib.SerializeValue(xVal, tSeen)
-    tSeen = tSeen or {}
+function ClassLib.SerializeValue(xVal, __tSeen)
     local sType = type(xVal)
-
-    -- Prevent infinite recursion on circular references
-    if (sType == "table") and tSeen[xVal] then return end
 
     if ClassLib.IsClassLibInstance(xVal) then
         if Client and ClassLib.HasAuthority(xVal) then return end
@@ -67,14 +63,17 @@ function ClassLib.SerializeValue(xVal, tSeen)
     elseif NanosUtils.IsEntityValid(xVal) then
         return xVal
 
-    elseif (type(xVal) == "table") and not tSafeMetatables[getmetatable(xVal)] then
-        tSeen[xVal] = true
+    elseif (sType == "table") and not tSafeMetatables[getmetatable(xVal)] then
+        __tSeen = __tSeen or {}
+        if __tSeen[xVal] then return end
+
+        __tSeen[xVal] = true
 
         local tRes = {}
         for k, v in pairs(xVal) do
-            local xK = ClassLib.SerializeValue(k, tSeen)
+            local xK = ClassLib.SerializeValue(k, __tSeen)
             if (xK ~= nil) then
-                tRes[xK] = ClassLib.SerializeValue(v, tSeen)
+                tRes[xK] = ClassLib.SerializeValue(v, __tSeen)
             end
         end
         return tRes
