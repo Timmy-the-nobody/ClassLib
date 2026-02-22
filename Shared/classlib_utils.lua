@@ -22,9 +22,7 @@ local Client = Client
 ---- `Singleton`       (4)  - Only allow one instance of the class to exist at a time<br>
 ---- `ServerAuthority` (8)  - Only allow the server to create instances of the class<br>
 ---- `Abstract`        (16) - Do not allow instances of the class to be created<br>
----- `ClientLocal`     (32) - Allow the client to create local instances with negative IDs (never collide with server positive IDs);
----                           combine with `ServerAuthority` to restrict positive-ID creation to the server while still permitting client-local instances;
----                           **incompatible with `GlobalPool`** — asserted at `Inherit` time
+---- `ClientLocal`     (32) - Allow the client to create local instances with negative IDs (never collide with server positive IDs);  combine with `ServerAuthority` to restrict positive-ID creation to the server while still permitting client-local instances;  **incompatible with `GlobalPool`** — asserted at `Inherit` time
 ClassLib.FL = {
     Replicated      = 1 << 0,
     GlobalPool      = 1 << 1,
