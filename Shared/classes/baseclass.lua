@@ -4,8 +4,6 @@
     Copyright © Timmy-the-nobody, 2023, https://github.com/Timmy-the-nobody
 ]]--
 
-local ClassLib = ClassLib
-
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Base class for all classes
 ---@class BaseClass
@@ -41,7 +39,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Called when the instance is about to be destroyed, return `false` to cancel the destruction
----@return boolean @Return `false` to cancel the destruction
+---@return boolean? @Return `false` to cancel the destruction
 function BaseClass:Destructor()
 end
 

@@ -9,26 +9,25 @@ local pairs = pairs
 local getmetatable = getmetatable
 local select = select
 
-local ClassLib = ClassLib
 local NanosUtils = NanosUtils
 local Events = Events
 local Server = Server
 local Client = Client
 
 ---@enum ClassLib.FL
----Flags used to define the behavior of a class<br>
----- `Replicated`      (1)  - Replicate the instance to all players by default<br>
----- `GlobalPool`      (2)  - Shared ID counter client/server — no negative IDs on client; **incompatible with `ClientLocal`**<br>
----- `Singleton`       (4)  - Only allow one instance of the class to exist at a time<br>
----- `ServerAuthority` (8)  - Only allow the server to create instances of the class<br>
----- `Abstract`        (16) - Do not allow instances of the class to be created<br>
----- `ClientLocal`     (32) - Allow the client to create local instances with negative IDs (never collide with server positive IDs);  combine with `ServerAuthority` to restrict positive-ID creation to the server while still permitting client-local instances;  **incompatible with `GlobalPool`** — asserted at `Inherit` time
+---Flags used to define the behavior of a class.<br>
 ClassLib.FL = {
+    --- - ClassLib.FL.Replicated (1) — Auto `AddReplicatedPlayer("*")` on spawn — all clients receive the instance.
     Replicated      = 1 << 0,
+    --- - ClassLib.FL.GlobalPool (2) — Shared ID counter client/server — no negative IDs on client.
     GlobalPool      = 1 << 1,
+    --- - ClassLib.FL.Singleton (4) — Only one valid instance allowed; `NewInstance` returns the existing one if still valid.
     Singleton       = 1 << 2,
+    --- - ClassLib.FL.ServerAuthority (8) — Only the server can create positive-ID instances.
     ServerAuthority = 1 << 3,
+    --- - ClassLib.FL.Abstract (16) — Cannot be instantiated directly; `NewInstance` asserts — child classes are unaffected.
     Abstract        = 1 << 4,
+    --- - ClassLib.FL.ClientLocal (32) — Client can create local instances with negative IDs (never collide with server positive IDs).
     ClientLocal     = 1 << 5,
 }
 
