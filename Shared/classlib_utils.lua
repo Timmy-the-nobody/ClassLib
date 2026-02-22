@@ -18,16 +18,20 @@ local Client = Client
 ---@enum ClassLib.FL
 ---Flags used to define the behavior of a class<br>
 ---- `Replicated`      (1)  - Replicate the instance to all players by default<br>
----- `GlobalPool`      (2)  - Use a shared ID space (usefull for instances created on the shared-side without any sync, keeps consistent IDs between server/client)
----- `Singleton`       (4)  - Only allow one instance of the class to exist at a time
----- `ServerAuthority` (8)  - Only allow the server to create instances of the class
----- `Abstract`        (16) - Do not allow instances of the class to be created
+---- `GlobalPool`      (2)  - Shared ID counter client/server — no negative IDs on client; **incompatible with `ClientLocal`**<br>
+---- `Singleton`       (4)  - Only allow one instance of the class to exist at a time<br>
+---- `ServerAuthority` (8)  - Only allow the server to create instances of the class<br>
+---- `Abstract`        (16) - Do not allow instances of the class to be created<br>
+---- `ClientLocal`     (32) - Allow the client to create local instances with negative IDs (never collide with server positive IDs);
+---                           combine with `ServerAuthority` to restrict positive-ID creation to the server while still permitting client-local instances;
+---                           **incompatible with `GlobalPool`** — asserted at `Inherit` time
 ClassLib.FL = {
     Replicated      = 1 << 0,
     GlobalPool      = 1 << 1,
     Singleton       = 1 << 2,
     ServerAuthority = 1 << 3,
-    Abstract        = 1 << 4
+    Abstract        = 1 << 4,
+    ClientLocal     = 1 << 5,
 }
 
 -- Metatables that should not be traversed during (de)serialization (nanos world already does this for us)

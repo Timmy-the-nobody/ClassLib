@@ -14,8 +14,8 @@ local assert = assert
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Contains all ClassLib global functions and variables
-ClassLib.__classlist = {}
-ClassLib.__classmap = {}
+ClassLib.__classlist = ClassLib.__classlist or {}
+ClassLib.__classmap = ClassLib.__classmap or {}
 
 -- Event map/lightweight wire protocol
 ClassLib.EventMap = {
@@ -53,12 +53,11 @@ local tCopyFromParentClassOnInherit = {
 ---@see ClassLib.FL
 function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     if (type(sClassName) ~= "string") then error("[ClassLib] Attempt to create a class with a nil name") end
-    if ClassLib.__classmap[sClassName] then
-        Console.Warn("[ClassLib] Attempt to create a class with a name that already exists, returning existing class")
-        return ClassLib.__classmap[sClassName]
-    end
-
+    assert((ClassLib.__classmap[sClassName] == nil), "[ClassLib] Attempt to create a class with a name that already exists")
     assert((type(oInheritFrom) == "table"), "[ClassLib] Attempt to extend from a nil class value")
+
+    local bGlobalClientCollision = ClassLib.HasFlag(iFlags, ClassLib.FL.GlobalPool) and ClassLib.HasFlag(iFlags, ClassLib.FL.ClientLocal)
+    assert(not bGlobalClientCollision, ("[ClassLib] Flags GlobalPool and ClientLocal are mutually exclusive (class '%s')"):format(sClassName))
 
     local bReplicateToAll = ClassLib.HasFlag(iFlags, ClassLib.FL.Replicated)
     local bUseGlobalPool = (not bReplicateToAll) and ClassLib.HasFlag(iFlags, ClassLib.FL.GlobalPool)
@@ -150,7 +149,6 @@ function ClassLib.Inherit(oInheritFrom, sClassName, iFlags)
     return oNewClass
 end
 
-
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns all instances of a class and all of its inherited classes (recursive)
 ---@param oClass table @The class
@@ -164,13 +162,11 @@ function ClassLib.GetAllInherited(oClass)
     for _, oInst in ipairs(tClassMT.__instances) do
         tResult[#tResult + 1] = oInst
     end
-
     for _, oChild in ipairs(tClassMT.__inherited_classes or {}) do
         for _, oInst in ipairs(ClassLib.GetAllInherited(oChild)) do
             tResult[#tResult + 1] = oInst
         end
     end
-
     return tResult
 end
 

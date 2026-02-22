@@ -61,11 +61,12 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     assert((type(oClass) == "table"), "[ClassLib] Attempt to create a new instance from a nil class value")
 
     local tClassMT = getmetatable(oClass)
-    assert(not ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Abstract), ("[ClassLib] Attempt to instantiate abstract class '%s'"):format(tClassMT.__classname))
-    assert(not (Client and not __iSyncID and ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.ServerAuthority)), ("[ClassLib] Attempt to instantiate server-authority class '%s' on the client"):format(tClassMT.__classname))
+    local iFlags = tClassMT.__flags
 
-    local bIsSingleton = ClassLib.HasFlag(tClassMT.__flags, ClassLib.FL.Singleton)
+    assert(not ClassLib.HasFlag(iFlags, ClassLib.FL.Abstract), ("[ClassLib] Attempt to instantiate abstract class '%s'"):format(tClassMT.__classname))
+    assert(not (Client and not __iSyncID and ClassLib.HasFlag(iFlags, ClassLib.FL.ServerAuthority) and not ClassLib.HasFlag(iFlags, ClassLib.FL.ClientLocal)), ("[ClassLib] Attempt to instantiate server-authority class '%s' on the client"):format(tClassMT.__classname))
 
+    local bIsSingleton = ClassLib.HasFlag(iFlags, ClassLib.FL.Singleton)
     if bIsSingleton then
         local oSingleton = tClassMT.__singleton_instance
         if oSingleton and ClassLib.IsValid(oSingleton) then
