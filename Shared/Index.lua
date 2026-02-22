@@ -13,8 +13,8 @@ Package.Require("classlib_events.lua")
 Package.Require("classlib_sync.lua")
 
 Package.Require("classes/baseclass.lua")
-Package.Require("classes/baseclassex.lua")
+-- Package.Require("classes/baseclassex.lua")
 
 Package.Export("ClassLib", ClassLib)
 Package.Export("BaseClass", BaseClass)
-Package.Export("BaseClassEx", BaseClassEx)
+-- Package.Export("BaseClassEx", BaseClassEx)
