@@ -354,15 +354,15 @@ function BaseClass:GetAllValuesKeys(bSyncedOnly)
     return ClassLib.GetAllValuesKeys(self, bSyncedOnly)
 end
 
-if Server then
-    ---`🔹 Server`<br>
-    ---Returns wether a key has it's value is broadcasted
-    ---@param sKey string @Key
-    ---@return boolean @Whether the key is broadcasted
-    function BaseClass:IsValueBroadcasted(sKey)
-        return ClassLib.IsValueBroadcasted(self, sKey)
-    end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Returns whether a key's value is synced (broadcasted to clients)
+---@param sKey string @Key
+---@return boolean @Whether the key is synced
+function BaseClass:IsValueSynced(sKey)
+    return ClassLib.IsValueSynced(self, sKey)
+end
 
+if Server then
     ---`🔹 Server`<br>
     ---Gets the players to replicate the instance to
     ---@return table<Player> @The players to replicate the instance to

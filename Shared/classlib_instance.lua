@@ -107,8 +107,10 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     end
 
     if tSyncInitValues then
+        local tMT = getmetatable(oInstance)
         for sKey, xValue in pairs(tSyncInitValues) do
-            ClassLib.SetValue(oInstance, sKey, xValue, true)
+            ClassLib.SetValue(oInstance, sKey, xValue, false)
+            if tMT then tMT.__sync_values[sKey] = xValue end
         end
     end
 
@@ -287,7 +289,7 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
         if tMT.__replicate_to_all then
             Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
         else
-            for pPly, tInfo in pairs(tMT.__replicated_players) do
+            for pPly, _ in pairs(tMT.__replicated_players) do
                 if pPly:IsValid() then
                     Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xSerialized)
                 end
@@ -306,7 +308,11 @@ if Client then
         local oInstance = tClass.GetByID(iID)
         if not oInstance then return end
 
-        ClassLib.SetValue(oInstance, sKey, ClassLib.ParseValue(xValue), true)
+        local xParsed = ClassLib.ParseValue(xValue)
+        ClassLib.SetValue(oInstance, sKey, xParsed, false)
+
+        local tMT = getmetatable(oInstance)
+        if tMT then tMT.__sync_values[sKey] = xParsed end
     end)
 end
 
@@ -360,8 +366,10 @@ if Client then
         local oInstance = tClass.GetByID(iID)
         if not oInstance then return end
 
+        local tMT = getmetatable(oInstance)
         for sKey, xValue in pairs(ClassLib.ParseValue(tValues)) do
-            ClassLib.SetValue(oInstance, sKey, xValue, true)
+            ClassLib.SetValue(oInstance, sKey, xValue, false)
+            if tMT then tMT.__sync_values[sKey] = xValue end
         end
     end)
 end
@@ -398,19 +406,17 @@ function ClassLib.GetAllValuesKeys(oInstance, bSyncedOnly)
     return tMT.__values
 end
 
-if Server then
-    ---`🔹 Server`<br>
-    ---Checks if a key is broadcasted
-    ---@param oInstance table @The instance to check
-    ---@param sKey string @The key to check
-    ---@return boolean @Whether the key is broadcasted
-    function ClassLib.IsValueBroadcasted(oInstance, sKey)
-        assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to check if a value is broadcasted from an invalid object")
+---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if a key is synced (broadcasted to clients)
+---@param oInstance table @The instance to check
+---@param sKey string @The key to check
+---@return boolean @Whether the key is synced
+function ClassLib.IsValueSynced(oInstance, sKey)
+    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to check if a value is synced from an invalid object")
 
-        local tMT = getmetatable(oInstance)
-        if not tMT then return false end
-        return tMT.__sync_values[sKey] ~= nil
-    end
+    local tMT = getmetatable(oInstance)
+    if not tMT then return false end
+    return tMT.__sync_values[sKey] ~= nil
 end
 
 -- Instance identification
