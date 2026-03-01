@@ -37,7 +37,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Subscribes to an Event
----@param oInput table @The object that will subscribe to the event
+---@param oInput table|BaseClass @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
 ---@param fnCallback function @The callback to call when the event is triggered, return false to unsubscribe from the event
 ---@return function? @The callback

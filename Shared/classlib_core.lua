@@ -46,7 +46,7 @@ local tCopyFromParentClassOnInherit = {
 ----------------------------------------------------------------------
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from the passed class
----@param oInheritFrom table @The class to inherit from
+---@param oInheritFrom table|BaseClass @The class to inherit from
 ---@param sClassName string @The name of the class
 ---@param iFlags? ClassLib.FL @The class flags:<br>
 ---@return table @The new class
