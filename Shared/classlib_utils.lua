@@ -44,7 +44,8 @@ local tSafeMetatables = {
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if a flag is set on a value
 ---@param iFlags number @The value to check
----@param iFlag number @The flag to check for in `ClassLib.FL`
+---@param iFlag ClassLib.FL @The flag to check for
+---@return boolean @Whether the flag is set
 ---@see ClassLib.FL
 function ClassLib.HasFlag(iFlags, iFlag)
     if not iFlags or not iFlag then return false end

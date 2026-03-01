@@ -6,8 +6,8 @@
         "Server"
     ],
     "Lua.diagnostics.disable": [
-        "unused-local",
-        "missing-parameter",
-        "param-type-mismatch"
+        // "unused-local",
+        // "missing-parameter",
+        // "param-type-mismatch"
     ]
 }

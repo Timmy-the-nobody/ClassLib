@@ -37,7 +37,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Subscribes to an Event
----@param oInput table|BaseClass @The object that will subscribe to the event
+---@param oInput table @The object that will subscribe to the event
 ---@param sEvent string @The name of the event to subscribe to
 ---@param fnCallback function @The callback to call when the event is triggered, return false to unsubscribe from the event
 ---@return function? @The callback
@@ -241,7 +241,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unsubscribes from a remote event
 ---@param oInstance table @The object to unsubscribe from
----@param sEvent string @The name of the event to unsubscribe from+
+---@param sEvent string @The name of the event to unsubscribe from
 ---@param fnCallback? function @The callback to unsubscribe
 function ClassLib.UnsubscribeRemote(oInstance, sEvent, fnCallback)
     if (type(sEvent) ~= "string") then return end

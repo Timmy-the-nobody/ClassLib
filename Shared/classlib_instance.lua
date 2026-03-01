@@ -446,6 +446,7 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Returns the ID of the instance, unique to the class
+---@param oInstance table @The instance
 ---@return integer? @Instance ID
 function ClassLib.GetID(oInstance)
     if (type(oInstance) ~= "table") then return end
@@ -478,6 +479,7 @@ end
 ---Binds an instance to another instance (the bound instance will be destroyed when the "bound to" instance is destroyed)
 ---@param oInstance table @The instance to bind
 ---@param oTarget table @The instance to bind to
+---@return boolean @Whether the bind was successful
 function ClassLib.Bind(oInstance, oTarget)
     if not oInstance or not oInstance:IsValid() then return false end
     if not oTarget or not oTarget:IsValid() then return false end
@@ -523,7 +525,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Gets the bound instance of an instance
 ---@param oInstance table @The instance to get the bound instance of
----@return table @The bound instance
+---@return table? @The bound instance, or nil if not bound
 function ClassLib.GetBoundTo(oInstance)
     local tMT = getmetatable(oInstance)
     return tMT.__bind and tMT.__bind.target

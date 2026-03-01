@@ -6,8 +6,7 @@
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Base class for all classes
----@class BaseClass
----@overload fun(): BaseClass
+---@class BaseClass : table
 BaseClass = {}
 
 setmetatable(BaseClass, {
@@ -113,12 +112,14 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Binds this instance to another instance (the bound instance will be destroyed when the "bound to" instance is destroyed)
 ---@param oBoundTo table @The instance to bind to
+---@return boolean @Whether the bind was successful
 function BaseClass:Bind(oBoundTo)
     return ClassLib.Bind(self, oBoundTo)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Unbinds this instance from any binding it has
+---@return boolean @Whether the instance was successfully unbound
 function BaseClass:Unbind()
     return ClassLib.Unbind(self)
 end
@@ -185,6 +186,14 @@ function BaseClass.GetInheritedClasses()
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Checks if this class inherits from the passed class (recursive)
+---@param oClass table @The class to check against
+---@return boolean @Whether this class inherits from the passed class
+function BaseClass.IsChildOf(oClass)
+    return ClassLib.IsA(BaseClass, oClass, true)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
 ---@param iFlags? ClassLib.FL @The class flags to use, defaults to `nil`
@@ -209,11 +218,11 @@ end
 ---Subscribes to an Event on the Class
 ---@param sEvent string @The name of the event to listen to
 ---@param callback function @The callback to call when the event is triggered, return false to unsubscribe from the event
----@overload fun(self: BaseClass, sEvent: "Spawn", callback: fun(self: BaseClass))
----@overload fun(self: BaseClass, sEvent: "Destroy", callback: fun(self: BaseClass))
----@overload fun(self: BaseClass, sEvent: "ValueChange", callback: fun(self: BaseClass, sKey: string, xValue: any))
----@overload fun(self: BaseClass, sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
----@overload fun(self: BaseClass, sEvent: "ReplicatedPlayerChange", callback: fun(oInheritedClass: table, oPlayer: Player, bAdded: boolean))
+---@overload fun(sEvent: "Spawn", callback: fun(oInst: BaseClass))
+---@overload fun(sEvent: "Destroy", callback: fun(oInst: BaseClass))
+---@overload fun(sEvent: "ValueChange", callback: fun(oInst: BaseClass, sKey: string, xValue: any))
+---@overload fun(sEvent: "ClassRegister", callback: fun(oInheritedClass: table))
+---@overload fun(sEvent: "ReplicatedPlayerChange", callback: fun(oInheritedClass: table, oPlayer: Player, bAdded: boolean))
 ---@return function? @The callback
 function BaseClass.ClassSubscribe(sEvent, callback)
     return ClassLib.Subscribe(BaseClass, sEvent, callback)
@@ -364,7 +373,8 @@ if Server then
 
     ---`🔹 Server`<br>
     ---Sets the players to replicate the instance to
-    ---@param tPlayers table<Player>|nil @The players to replicate the instance to
+    ---@param tPlayers table<Player>|"*"|false @The players to replicate the instance to, `"*"` for all players, `false` to clear
+    ---@return boolean @Whether the players were set successfully
     function BaseClass:SetReplicatedPlayers(tPlayers)
         return ClassLib.SetReplicatedPlayers(self, tPlayers)
     end
