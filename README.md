@@ -44,6 +44,6 @@ Your PRs are welcome! However, in order to keep a clean code base, please follow
 
 The inception of **ClassLib** is credited to [MegaThorx](https://github.com/MegaThorx) and their EGUI package, serving as the foundational inspiration.
 
-Special thanks go to [Mouloud](https://github.com/MouloudP) and [Aerox](https://github.com/aeroxfr) for their invaluable contributions in testing and providing feedback during the early stages of the library.
+Special thanks go to [Mouloud](https://github.com/MouloudP) and [Aerox](https://github.com/aeroxfr) for their invaluable contributions in testing and providing feedback during the early stages of the library, and to [NegativeName](https://github.com/negativenamengt) who also brought a few ideas and tested many of the recent features.
 
 Their input has played a crucial role in refining and enhancing the library.
