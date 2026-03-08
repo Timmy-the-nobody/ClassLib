@@ -83,7 +83,12 @@ if Client then
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
-        ClassLib.Destroy(tClass.GetByID(iID))
+        local oInstance = tClass.GetByID(iID)
+        if not oInstance then
+            Console.Warn("[ClassLib] SyncDestroy: no instance found for "..sClassName.." (id: "..tostring(iID)..")")
+            return
+        end
+        ClassLib.Destroy(oInstance)
     end)
 end
 
