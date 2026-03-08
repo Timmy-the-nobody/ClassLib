@@ -10,8 +10,6 @@ local getmetatable = getmetatable
 local select = select
 
 local NanosUtils = NanosUtils
-local Events = Events
-local Server = Server
 local Client = Client
 
 ---@enum ClassLib.FL

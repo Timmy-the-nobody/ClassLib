@@ -17,6 +17,23 @@ local Events = Events
 local Server = Server
 local Client = Client
 
+---Asserts that an instance is valid, with detailed error info
+---@param oInstance any @The instance to validate
+---@param sAction string @Description of the attempted action (e.g. "destroy", "clone")
+local function assertValid(oInstance, sAction)
+    if ClassLib.IsValid(oInstance) then return end
+    local sType = type(oInstance)
+    if sType ~= "table" then
+        error("[ClassLib] Attempt to "..sAction.." an invalid object (got "..sType..")")
+    end
+    local tMT = getmetatable(oInstance)
+    if not tMT or not tMT.__classlib_instance then
+        error("[ClassLib] Attempt to "..sAction.." an invalid object (not a ClassLib instance)")
+    end
+    local sClass = tMT.__index and tostring(tMT.__index) or "unknown"
+    error("[ClassLib] Attempt to "..sAction.." an already-destroyed "..sClass.." (id: "..tostring(rawget(oInstance, "id"))..")")
+end
+
 -- List of keys to copy from the parent class on new instance
 local tCopyFromClassOnNewInstance = {
     "__newindex",
@@ -131,7 +148,7 @@ end
 ---Destroys an instance of a class
 ---@param oInstance table @The instance to destroy
 function ClassLib.Destroy(oInstance, ...)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to destroy an invalid object")
+    assertValid(oInstance, "destroy")
 
     local tMT = getmetatable(oInstance)
     local oClass = tMT.__index
@@ -196,7 +213,7 @@ end
 ---@param ... any @The arguments to pass to the constructor
 ---@return table @The new instance
 function ClassLib.Clone(oInstance, tIgnoredKeys, ...)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to clone an invalid object")
+    assertValid(oInstance, "clone")
 
     local oClass = ClassLib.GetClass(oInstance)
     assert((type(oClass) == "table"), "[ClassLib] The object passed has no valid class")
@@ -257,7 +274,7 @@ end
 ---@param bSync? boolean @Server: Whether to sync the value change, Client: Mark the value as broadcasted
 ---@return boolean? @Return true if the value was set, nil otherwise
 function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set a value on an invalid object")
+    assertValid(oInstance, "set a value on")
     assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
     assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
 
@@ -324,7 +341,7 @@ end
 ---@param bSync? boolean @Server: whether to sync all changes to replicated players
 ---@return boolean? @Return true if the values were set, nil otherwise
 function ClassLib.SetValues(oInstance, tKeyValues, bSync)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to set values on an invalid object")
+    assertValid(oInstance, "set values on")
     assert((type(tKeyValues) == "table"), "[ClassLib] The key/values table passed to ClassLib.SetValues is not a table")
 
     for sKey, xValue in pairs(tKeyValues) do
@@ -381,7 +398,7 @@ end
 ---@param xFallback? any @Fallback value (if the instance or the key doesn't exist)
 ---@return any @Value
 function ClassLib.GetValue(oInstance, sKey, xFallback)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to get a value from an invalid object")
+    assertValid(oInstance, "get a value from")
 
     local tMT = getmetatable(oInstance)
     if not tMT then return xFallback end
@@ -397,7 +414,7 @@ end
 ---@param bSyncedOnly? boolean @Whether to only get broadcasted values
 ---@return table @Table with the key as key and the value as value
 function ClassLib.GetAllValuesKeys(oInstance, bSyncedOnly)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to get all values from an invalid object")
+    assertValid(oInstance, "get all values from")
 
     local tMT = getmetatable(oInstance)
     if not tMT then return {} end
@@ -412,7 +429,7 @@ end
 ---@param sKey string @The key to check
 ---@return boolean @Whether the key is synced
 function ClassLib.IsValueSynced(oInstance, sKey)
-    assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to check if a value is synced from an invalid object")
+    assertValid(oInstance, "check if a value is synced from")
 
     local tMT = getmetatable(oInstance)
     if not tMT then return false end
