@@ -8,7 +8,6 @@ local type = type
 local setmetatable = setmetatable
 local getmetatable = getmetatable
 local ipairs = ipairs
-local pairs = pairs
 local error = error
 local assert = assert
 
@@ -19,12 +18,12 @@ ClassLib.__classmap = ClassLib.__classmap or {}
 
 -- Event map/lightweight wire protocol
 ClassLib.EventMap = {
-    ["Constructor"] = "%0",
-    ["Destructor"] = "%1",
-    ["SetValue"] = "%2",
-    ["CLToSV"] = "%3",
-    ["SVToCL"] = "%4",
-    ["SetValues"] = "%5",
+    ["Constructor"] = "CL:C",
+    ["Destructor"] = "CL:D",
+    ["CLToSV"] = "CL:CTS",
+    ["SVToCL"] = "CL:STC",
+    ["SetValue"] = "CL:SV",
+    ["SetValues"] = "CL:SVS",
 }
 
 -- List of keys to copy from the parent class on inherit

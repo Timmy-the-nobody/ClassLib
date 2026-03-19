@@ -12,7 +12,6 @@ local ipairs = ipairs
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 
-local NanosUtils = NanosUtils
 local Events = Events
 local Server = Server
 local Client = Client
