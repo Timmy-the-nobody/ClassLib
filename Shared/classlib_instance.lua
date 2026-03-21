@@ -16,6 +16,21 @@ local Events = Events
 local Server = Server
 local Client = Client
 
+-- List of keys to copy from the parent class on new instance
+local tCopyFromClassOnNewInstance = {
+    "__newindex",
+    "__call",
+    "__unm",
+    "__add",
+    "__sub",
+    "__mul",
+    "__div",
+    "__pow",
+    "__concat",
+    "__tostring"
+}
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Asserts that an instance is valid, with detailed error info
 ---@param oInstance any @The instance to validate
 ---@param sAction string @Description of the attempted action (e.g. "destroy", "clone")
@@ -33,21 +48,11 @@ local function assertValid(oInstance, sAction)
     error("[ClassLib] Attempt to "..sAction.." an already-destroyed "..sClass.." (id: "..tostring(rawget(oInstance, "id"))..")")
 end
 
--- List of keys to copy from the parent class on new instance
-local tCopyFromClassOnNewInstance = {
-    "__newindex",
-    "__call",
-    "__unm",
-    "__add",
-    "__sub",
-    "__mul",
-    "__div",
-    "__pow",
-    "__concat",
-    "__tostring"
-}
-
----Internally used to allocate an ID for an instance
+---`🔸 Client`<br>`🔹 Server`<br>
+---Allocates a new ID for an instance
+---@param oClass table @The class to allocate an ID for
+---@param __iSyncID? number @The forced ID of the instance, used for syncing the instance on the client from the server, you should NEVER use this
+---@return number @The allocated ID
 local function allocateID(oClass, __iSyncID)
     if Client and __iSyncID then
         return __iSyncID
@@ -79,7 +84,7 @@ function ClassLib.NewInstance(oClass, __iSyncID, ...)
     local iFlags = tClassMT.__flags
 
     assert(not ClassLib.HasFlag(iFlags, ClassLib.FL.Abstract), ("[ClassLib] Attempt to instantiate abstract class '%s'"):format(tClassMT.__classname))
-    assert(not (Client and not __iSyncID and ClassLib.HasFlag(iFlags, ClassLib.FL.ServerAuthority) and not ClassLib.HasFlag(iFlags, ClassLib.FL.ClientLocal)), ("[ClassLib] Attempt to instantiate server-authority class '%s' on the client"):format(tClassMT.__classname))
+    assert(not (Client and not __iSyncID and ClassLib.HasFlag(iFlags, ClassLib.FL.ServerAuthority) and not ClassLib.HasFlag(iFlags, ClassLib.FL.ClientLocal)), ("[ClassLib] Attempt to instantiate server-authority class '%s' on the client, this is not supported unless the class is also using the ClientLocal flag"):format(tClassMT.__classname))
 
     local bIsSingleton = ClassLib.HasFlag(iFlags, ClassLib.FL.Singleton)
     if bIsSingleton then
@@ -265,14 +270,13 @@ local function handleIDChange(oInstance, tClass, iNewID)
     end
 end
 
----`🔸 Client`<br>`🔹 Server`<br>
----Sets a value on an instance
----@param oInstance table @The instance to set the value on
----@param sKey string @The key to set the value on
----@param xValue any @The value to set
----@param bSync? boolean @Server: Whether to sync the value change, Client: Mark the value as broadcasted
----@return boolean? @Return true if the value was set, nil otherwise
-function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
+---Writes a value to an instance without firing events or syncing.
+---Returns the metatable, class, and old value for callers that need them.
+---@param oInstance table
+---@param sKey string
+---@param xValue any
+---@return table? tMT, table? tClass, any xOldValue
+local function writeValue(oInstance, sKey, xValue)
     assertValid(oInstance, "set a value on")
     assert((type(sKey) == "string"), "[ClassLib] The key passed to ClassLib.SetValue is not a string")
     assert((type(xValue) ~= "function"), "[ClassLib] Attempt to set a function as a value")
@@ -292,25 +296,94 @@ function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
     oInstance[sKey] = xValue
     tMT.__values[sKey] = xValue
 
+    return tMT, tClass, xOldValue
+end
+
+---Syncs a single value to replicated players
+---@param tMT table
+---@param tClass table
+---@param oInstance table
+---@param sKey string
+---@param xValue any
+local function syncValue(tMT, tClass, oInstance, sKey, xValue)
+    local xSerialized = ClassLib.SerializeValue(xValue)
+    local sClassName = tClass.GetClassName()
+    local iID = oInstance:GetID()
+
+    tMT.__sync_values[sKey] = xValue
+
+    if tMT.__replicate_to_all then
+        Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
+    else
+        for pPly, _ in pairs(tMT.__replicated_players) do
+            if pPly:IsValid() then
+                Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xSerialized)
+            end
+        end
+    end
+end
+
+---Syncs multiple values to replicated players in a single network event
+---@param tMT table
+---@param tClass table
+---@param oInstance table
+---@param tKeyValues table<string, any>
+local function syncValues(tMT, tClass, oInstance, tKeyValues)
+    local sClassName = tClass.GetClassName()
+    local iID = oInstance:GetID()
+    local tSerialized = {}
+
+    for sKey, xValue in pairs(tKeyValues) do
+        tMT.__sync_values[sKey] = xValue
+        tSerialized[sKey] = ClassLib.SerializeValue(xValue)
+    end
+
+    if tMT.__replicate_to_all then
+        Events.BroadcastRemote(ClassLib.EventMap.SetValues, sClassName, iID, tSerialized)
+    else
+        for pPly in pairs(tMT.__replicated_players) do
+            if pPly:IsValid() then
+                Events.CallRemote(ClassLib.EventMap.SetValues, pPly, sClassName, iID, tSerialized)
+            end
+        end
+    end
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets a value on an instance
+---@param oInstance table @The instance to set the value on
+---@param sKey string @The key to set the value on
+---@param xValue any @The value to set
+---@param bSync? boolean @Server: Whether to sync the value change, Client: Mark the value as broadcasted
+---@return boolean? @Return true if the value was set, nil otherwise
+function ClassLib.SetValue(oInstance, sKey, xValue, bSync)
+    local tMT, tClass, xOldValue = writeValue(oInstance, sKey, xValue)
+    if (not tMT or not tClass) then return end
+
     ClassLib.Call(tClass, "ValueChange", oInstance, sKey, xValue, xOldValue)
     ClassLib.Call(oInstance, "ValueChange", oInstance, sKey, xValue, xOldValue)
 
-    if bSync and Server then
-        local xSerialized = ClassLib.SerializeValue(xValue)
-        local sClassName = tClass.GetClassName()
-        local iID = oInstance:GetID()
+    if (bSync and Server) then
+        syncValue(tMT, tClass, oInstance, sKey, xValue)
+    end
 
-        tMT.__sync_values[sKey] = xValue
+    return true
+end
 
-        if tMT.__replicate_to_all then
-            Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
-        else
-            for pPly, _ in pairs(tMT.__replicated_players) do
-                if pPly:IsValid() then
-                    Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xSerialized)
-                end
-            end
-        end
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets a value on an instance without firing ValueChange events.
+---Use for initialization, derived/cached values, or internal bookkeeping.
+---@param oInstance table @The instance to set the value on
+---@param sKey string @The key to set the value on
+---@param xValue any @The value to set
+---@param bSync? boolean @Server: Whether to sync the value change to replicated players
+---@return boolean? @Return true if the value was set, nil otherwise
+function ClassLib.SetValueSilent(oInstance, sKey, xValue, bSync)
+    local tMT, tClass = writeValue(oInstance, sKey, xValue)
+    if (not tMT or not tClass) then return end
+
+    if (bSync and Server) then
+        syncValue(tMT, tClass, oInstance, sKey, xValue)
     end
 
     return true
@@ -334,7 +407,9 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Sets multiple values on an instance in one call; on the server, syncs all changed keys
----in a single network event instead of one per key
+---in a single network event instead of one per key.
+---Fires a single coalesced `ValuesChanged(oInstance, tChanges)` event instead of per-key `ValueChange`.
+---`tChanges` maps each key to `{xNew, xOld}`.
 ---@param oInstance table @The instance to set the values on
 ---@param tKeyValues table<string, any> @Key/value pairs to set
 ---@param bSync? boolean @Server: whether to sync all changes to replicated players
@@ -343,32 +418,57 @@ function ClassLib.SetValues(oInstance, tKeyValues, bSync)
     assertValid(oInstance, "set values on")
     assert((type(tKeyValues) == "table"), "[ClassLib] The key/values table passed to ClassLib.SetValues is not a table")
 
+    local tMT = getmetatable(oInstance)
+    if not tMT then return end
+
+    local tClass = tMT.__index
+    if not tClass then return end
+
+    local tChanges = {}
     for sKey, xValue in pairs(tKeyValues) do
-        ClassLib.SetValue(oInstance, sKey, xValue, false)
+        local _, _, xOldValue = writeValue(oInstance, sKey, xValue)
+        tChanges[sKey] = {xValue, xOldValue}
     end
 
-    if bSync and Server then
+    local fnCall = ClassLib.Call
+    for sKey, tChange in pairs(tChanges) do
+        fnCall(tClass, "ValueChange", oInstance, sKey, tChange[1], tChange[2])
+        fnCall(oInstance, "ValueChange", oInstance, sKey, tChange[1], tChange[2])
+    end
+
+    fnCall(tClass, "ValuesChanged", oInstance, tChanges)
+    fnCall(oInstance, "ValuesChanged", oInstance, tChanges)
+
+    if (bSync and Server) then
+        syncValues(tMT, tClass, oInstance, tKeyValues)
+    end
+
+    return true
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets multiple values on an instance without firing any events.
+---Use for initialization or bulk internal state updates.
+---@param oInstance table @The instance to set the values on
+---@param tKeyValues table<string, any> @Key/value pairs to set
+---@param bSync? boolean @Server: whether to sync all changes to replicated players
+---@return boolean? @Return true if the values were set, nil otherwise
+function ClassLib.SetValuesSilent(oInstance, tKeyValues, bSync)
+    assertValid(oInstance, "set values on")
+    assert((type(tKeyValues) == "table"), "[ClassLib] The key/values table passed to ClassLib.SetValuesSilent is not a table")
+
+    for sKey, xValue in pairs(tKeyValues) do
+        writeValue(oInstance, sKey, xValue)
+    end
+
+    if (bSync and Server) then
         local tMT = getmetatable(oInstance)
-        local tClass = ClassLib.GetClass(oInstance)
+        if not tMT then return end
+
+        local tClass = tMT.__index
         if not tClass then return end
-        local sClassName = tClass.GetClassName()
-        local iID = oInstance:GetID()
-        local tSerialized = {}
 
-        for sKey, xValue in pairs(tKeyValues) do
-            tMT.__sync_values[sKey] = xValue
-            tSerialized[sKey] = ClassLib.SerializeValue(xValue)
-        end
-
-        if tMT.__replicate_to_all then
-            Events.BroadcastRemote(ClassLib.EventMap.SetValues, sClassName, iID, tSerialized)
-        else
-            for pPly in pairs(tMT.__replicated_players) do
-                if pPly:IsValid() then
-                    Events.CallRemote(ClassLib.EventMap.SetValues, pPly, sClassName, iID, tSerialized)
-                end
-            end
-        end
+        syncValues(tMT, tClass, oInstance, tKeyValues)
     end
 
     return true
@@ -383,10 +483,21 @@ if Client then
         if not oInstance then return end
 
         local tMT = getmetatable(oInstance)
+        local tChanges = {}
         for sKey, xValue in pairs(ClassLib.ParseValue(tValues)) do
-            ClassLib.SetValue(oInstance, sKey, xValue, false)
+            local _, _, xOldValue = writeValue(oInstance, sKey, xValue)
+            tChanges[sKey] = {xValue, xOldValue}
             if tMT then tMT.__sync_values[sKey] = xValue end
         end
+
+        local fnCall = ClassLib.Call
+        for sKey, tChange in pairs(tChanges) do
+            fnCall(tClass, "ValueChange", oInstance, sKey, tChange[1], tChange[2])
+            fnCall(oInstance, "ValueChange", oInstance, sKey, tChange[1], tChange[2])
+        end
+
+        fnCall(tClass, "ValuesChanged", oInstance, tChanges)
+        fnCall(oInstance, "ValuesChanged", oInstance, tChanges)
     end)
 end
 

@@ -5,7 +5,6 @@
 ]]--
 
 local type = type
-local pairs = pairs
 local ipairs = ipairs
 local getmetatable = getmetatable
 

@@ -338,6 +338,23 @@ function BaseClass:SetValues(tKeyValues, bSync)
 end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
+---Sets a key/value on the instance without firing ValueChange events
+---@param sKey string @Key
+---@param xValue any @Value
+---@param bSync? boolean @Whether to broadcast the key/value to all replicated players (server only)
+function BaseClass:SetValueSilent(sKey, xValue, bSync)
+    return ClassLib.SetValueSilent(self, sKey, xValue, bSync)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
+---Sets multiple key/values on the instance without firing any events
+---@param tKeyValues table<string, any> @Key/value pairs to set
+---@param bSync? boolean @Whether to broadcast all changes to replicated players (server only)
+function BaseClass:SetValuesSilent(tKeyValues, bSync)
+    return ClassLib.SetValuesSilent(self, tKeyValues, bSync)
+end
+
+---`🔸 Client`<br>`🔹 Server`<br>
 ---Gets a key/value from the instance
 ---@param sKey string @Key
 ---@param xFallback? any @Fallback value (if the key doesn't exist)
