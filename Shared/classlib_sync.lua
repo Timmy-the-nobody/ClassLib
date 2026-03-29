@@ -54,6 +54,7 @@ if Server then
         local iID = oInstance:GetID()
 
         if (getmetatable(pPly) == Player) then
+            if not pPly:IsValid() then return end
             Events.CallRemote(ClassLib.EventMap.Destructor, pPly, sClass, iID)
         else
             Events.BroadcastRemote(ClassLib.EventMap.Destructor, sClass, iID)
