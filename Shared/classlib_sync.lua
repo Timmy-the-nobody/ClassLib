@@ -31,7 +31,7 @@ if Server then
         local tSerVal = ClassLib.SerializeValue(tValues)
 
         if pPly and (getmetatable(pPly) == Player) then
-            if not pPly:IsValid() then return end
+            if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
             Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tSerVal)
         else
             Events.BroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, tSerVal)
@@ -54,7 +54,7 @@ if Server then
         local iID = oInstance:GetID()
 
         if (getmetatable(pPly) == Player) then
-            if not pPly:IsValid() then return end
+            if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
             Events.CallRemote(ClassLib.EventMap.Destructor, pPly, sClass, iID)
         else
             Events.BroadcastRemote(ClassLib.EventMap.Destructor, sClass, iID)
@@ -168,7 +168,7 @@ if Server then
         local tNewMap = {}
 
         for _, pPly in ipairs(xPlayers) do
-            if (getmetatable(pPly) == Player) and pPly:IsValid() then
+            if (getmetatable(pPly) == Player) and pPly:IsValid() and not pPly:IsBeingDestroyed() then
                 tNewMap[pPly] = true
                 if not tOldMap[pPly] then
                     ClassLib.AddReplicatedPlayer(oInstance, pPly)
