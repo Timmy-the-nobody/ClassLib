@@ -196,7 +196,7 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Creates a new class that inherits from this class
 ---@param sClassName string @The name of the new class
----@param iFlags? ClassLib.FL @The class flags to use, defaults to `nil`
+---@param iFlags? ClassLib.FL | integer @The class flags to use, defaults to `nil`
 ---@return table @The newly created class
 ---@see ClassLib.FL
 function BaseClass.Inherit(sClassName, iFlags)
