@@ -10,7 +10,9 @@ local getmetatable = getmetatable
 local pairs = pairs
 local ipairs = ipairs
 
-local Events = Events
+local eventsCallRemote = Events.CallRemote
+local eventsBroadcastRemote = Events.BroadcastRemote
+local eventsSubscribeRemote = Events.SubscribeRemote
 local Server = Server
 local Client = Client
 
@@ -32,9 +34,9 @@ if Server then
 
         if pPly and (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
-            Events.CallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tSerVal)
+            eventsCallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tSerVal)
         else
-            Events.BroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, tSerVal)
+            eventsBroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, tSerVal)
         end
     end
 
@@ -55,15 +57,15 @@ if Server then
 
         if (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
-            Events.CallRemote(ClassLib.EventMap.Destructor, pPly, sClass, iID)
+            eventsCallRemote(ClassLib.EventMap.Destructor, pPly, sClass, iID)
         else
-            Events.BroadcastRemote(ClassLib.EventMap.Destructor, sClass, iID)
+            eventsBroadcastRemote(ClassLib.EventMap.Destructor, sClass, iID)
         end
     end
 end
 
 if Client then
-    Events.SubscribeRemote(ClassLib.EventMap.Constructor, function(sClassName, iID, tValues)
+    eventsSubscribeRemote(ClassLib.EventMap.Constructor, function(sClassName, iID, tValues)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
@@ -80,7 +82,7 @@ if Client then
         end
     end)
 
-    Events.SubscribeRemote(ClassLib.EventMap.Destructor, function(sClassName, iID)
+    eventsSubscribeRemote(ClassLib.EventMap.Destructor, function(sClassName, iID)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 

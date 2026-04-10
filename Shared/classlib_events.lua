@@ -8,7 +8,10 @@ local type = type
 local ipairs = ipairs
 local getmetatable = getmetatable
 
-local Events = Events
+local eventsCallRemote = Events.CallRemote
+local eventsCallRemotePlayers = Events.CallRemotePlayers
+local eventsBroadcastRemote = Events.BroadcastRemote
+local eventsSubscribeRemote = Events.SubscribeRemote
 
 -- Local Events
 ---------------------------------------------------------------------
@@ -90,11 +93,11 @@ if Client then
         if not sClass then return end
 
         local tArgs = ClassLib.SerializeArgs(...)
-        Events.CallRemote(ClassLib.EventMap.CLToSV, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+        eventsCallRemote(ClassLib.EventMap.CLToSV, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
     local tPendingRemoteWaiters = {}
-    Events.SubscribeRemote(ClassLib.EventMap.SVToCL, function(sClassName, iID, sEvent, ...)
+    eventsSubscribeRemote(ClassLib.EventMap.SVToCL, function(sClassName, iID, sEvent, ...)
         local tClass = ClassLib.__classmap[sClassName]
         if not tClass then return end
 
@@ -143,7 +146,7 @@ if Client then
         tByID[iID][#tByID[iID] + 1] = fnWaiter
     end)
 
-    Events.SubscribeRemote(ClassLib.EventMap.Destructor, function(sClassName, iID)
+    eventsSubscribeRemote(ClassLib.EventMap.Destructor, function(sClassName, iID)
         local tByID = tPendingRemoteWaiters[sClassName]
         if not tByID or not tByID[iID] then return end
 
@@ -172,7 +175,7 @@ elseif Server then
 
         if (getmetatable(xPlayer) == Player) then
             local tArgs = ClassLib.SerializeArgs(...)
-            Events.CallRemote(ClassLib.EventMap.SVToCL, xPlayer, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+            eventsCallRemote(ClassLib.EventMap.SVToCL, xPlayer, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
             return
         end
 
@@ -180,10 +183,14 @@ elseif Server then
 
         local iID = oInstance:GetID()
         local tArgs = ClassLib.SerializeArgs(...)
+        local tValid = {}
         for _, pPly in ipairs(xPlayer) do
             if (getmetatable(pPly) == Player) then
-                Events.CallRemote(ClassLib.EventMap.SVToCL, pPly, sClass, iID, sEvent, table.unpack(tArgs))
+                tValid[#tValid + 1] = pPly
             end
+        end
+        if (#tValid > 0) then
+            eventsCallRemotePlayers(ClassLib.EventMap.SVToCL, tValid, sClass, iID, sEvent, table.unpack(tArgs))
         end
     end
 
@@ -199,10 +206,10 @@ elseif Server then
         if not sClass then return end
 
         local tArgs = ClassLib.SerializeArgs(...)
-        Events.BroadcastRemote(ClassLib.EventMap.SVToCL, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+        eventsBroadcastRemote(ClassLib.EventMap.SVToCL, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
-    Events.SubscribeRemote(ClassLib.EventMap.CLToSV, function(pPly, sClassName, iID, sEvent, ...)
+    eventsSubscribeRemote(ClassLib.EventMap.CLToSV, function(pPly, sClassName, iID, sEvent, ...)
         local tClass = ClassLib.__classmap[sClassName]
         if not tClass then return end
 

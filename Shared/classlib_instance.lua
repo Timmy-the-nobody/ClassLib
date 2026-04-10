@@ -12,7 +12,9 @@ local ipairs = ipairs
 local getmetatable = getmetatable
 local setmetatable = setmetatable
 
-local Events = Events
+local eventsCallRemotePlayers = Events.CallRemotePlayers
+local eventsBroadcastRemote = Events.BroadcastRemote
+local eventsSubscribeRemote = Events.SubscribeRemote
 local Server = Server
 local Client = Client
 
@@ -313,12 +315,16 @@ local function syncValue(tMT, tClass, oInstance, sKey, xValue)
     tMT.__sync_values[sKey] = xValue
 
     if tMT.__replicate_to_all then
-        Events.BroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
+        eventsBroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
     else
-        for pPly, _ in pairs(tMT.__replicated_players) do
+        local tValid = {}
+        for pPly in pairs(tMT.__replicated_players) do
             if pPly:IsValid() then
-                Events.CallRemote(ClassLib.EventMap.SetValue, pPly, sClassName, iID, sKey, xSerialized)
+                tValid[#tValid + 1] = pPly
             end
+        end
+        if (#tValid > 0) then
+            eventsCallRemotePlayers(ClassLib.EventMap.SetValue, tValid, sClassName, iID, sKey, xSerialized)
         end
     end
 end
@@ -339,12 +345,16 @@ local function syncValues(tMT, tClass, oInstance, tKeyValues)
     end
 
     if tMT.__replicate_to_all then
-        Events.BroadcastRemote(ClassLib.EventMap.SetValues, sClassName, iID, tSerialized)
+        eventsBroadcastRemote(ClassLib.EventMap.SetValues, sClassName, iID, tSerialized)
     else
+        local tValid = {}
         for pPly in pairs(tMT.__replicated_players) do
             if pPly:IsValid() then
-                Events.CallRemote(ClassLib.EventMap.SetValues, pPly, sClassName, iID, tSerialized)
+                tValid[#tValid + 1] = pPly
             end
+        end
+        if (#tValid > 0) then
+            eventsCallRemotePlayers(ClassLib.EventMap.SetValues, tValid, sClassName, iID, tSerialized)
         end
     end
 end
@@ -390,7 +400,7 @@ function ClassLib.SetValueSilent(oInstance, sKey, xValue, bSync)
 end
 
 if Client then
-    Events.SubscribeRemote(ClassLib.EventMap.SetValue, function(sClassName, iID, sKey, xValue)
+    eventsSubscribeRemote(ClassLib.EventMap.SetValue, function(sClassName, iID, sKey, xValue)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
@@ -475,7 +485,7 @@ function ClassLib.SetValuesSilent(oInstance, tKeyValues, bSync)
 end
 
 if Client then
-    Events.SubscribeRemote(ClassLib.EventMap.SetValues, function(sClassName, iID, tValues)
+    eventsSubscribeRemote(ClassLib.EventMap.SetValues, function(sClassName, iID, tValues)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
