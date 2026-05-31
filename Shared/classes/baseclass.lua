@@ -4,6 +4,9 @@
     Copyright © Timmy-the-nobody, 2023, https://github.com/Timmy-the-nobody
 ]]--
 
+local _RR = Reliability.Reliable
+local _RU = Reliability.Unreliable
+
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Base class for all classes
 ---@class BaseClass : table
@@ -294,28 +297,53 @@ if Client then
     end
 
     ---`🔸 Client`<br>
-    ---Calls a remote event from the client to the server
+    ---Calls a remote event from the client to the server (reliable)
     ---@param sEvent string @The name of the event to call
     ---@param ... any @The arguments to pass to the event
     function BaseClass:CallRemote(sEvent, ...)
-        return ClassLib.CallRemote_Client(self, sEvent, ...)
+        return ClassLib.CallRemote_Client(self, sEvent, _RR, ...)
+    end
+
+    ---`🔸 Client`<br>
+    ---Calls a remote event from the client to the server (unreliable — no delivery guarantee)
+    ---@param sEvent string @The name of the event to call
+    ---@param ... any @The arguments to pass to the event
+    function BaseClass:CallRemoteUnreliable(sEvent, ...)
+        return ClassLib.CallRemote_Client(self, sEvent, _RU, ...)
     end
 elseif Server then
     ---`🔹 Server`<br>
-    ---Calls a remote event from the server to the client
+    ---Calls a remote event from the server to the client (reliable)
     ---@param sEvent string @The name of the event to call
     ---@param xPlayer Player|table<number, Player> @The player (or table of players) to which to send the event
     ---@param ... any @The arguments to pass to the event
     function BaseClass:CallRemote(sEvent, xPlayer, ...)
-        ClassLib.CallRemote_Server(self, sEvent, xPlayer, ...)
+        ClassLib.CallRemote_Server(self, sEvent, xPlayer, _RR, ...)
     end
 
     ---`🔹 Server`<br>
-    ---Broadcast a remote event from the server to all players
+    ---Calls a remote event from the server to the client (unreliable — no delivery guarantee)
+    ---@param sEvent string @The name of the event to call
+    ---@param xPlayer Player|table<number, Player> @The player (or table of players) to which to send the event
+    ---@param ... any @The arguments to pass to the event
+    function BaseClass:CallRemoteUnreliable(sEvent, xPlayer, ...)
+        ClassLib.CallRemote_Server(self, sEvent, xPlayer, _RU, ...)
+    end
+
+    ---`🔹 Server`<br>
+    ---Broadcast a remote event from the server to all players (reliable)
     ---@param sEvent string @The name of the event to broadcast
     ---@param ... any @The arguments to pass to the event
     function BaseClass:BroadcastRemote(sEvent, ...)
-        ClassLib.BroadcastRemote(self, sEvent, Reliability.Reliable, ...)
+        ClassLib.BroadcastRemote(self, sEvent, _RR, ...)
+    end
+
+    ---`🔹 Server`<br>
+    ---Broadcast a remote event from the server to all players (unreliable — no delivery guarantee)
+    ---@param sEvent string @The name of the event to broadcast
+    ---@param ... any @The arguments to pass to the event
+    function BaseClass:BroadcastRemoteUnreliable(sEvent, ...)
+        ClassLib.BroadcastRemote(self, sEvent, _RU, ...)
     end
 end
 
