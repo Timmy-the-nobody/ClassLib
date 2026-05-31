@@ -17,6 +17,7 @@ local eventsBroadcastRemote = Events.BroadcastRemote
 local eventsSubscribeRemote = Events.SubscribeRemote
 local Server = Server
 local Client = Client
+local _RR = Reliability.Reliable
 
 -- List of keys to copy from the parent class on new instance
 local tCopyFromClassOnNewInstance = {
@@ -315,7 +316,7 @@ local function syncValue(tMT, tClass, oInstance, sKey, xValue)
     tMT.__sync_values[sKey] = xValue
 
     if tMT.__replicate_to_all then
-        eventsBroadcastRemote(ClassLib.EventMap.SetValue,  Reliability.Reliable, sClassName, iID, sKey, xSerialized)
+        eventsBroadcastRemote(ClassLib.EventMap.SetValue,  _RR, sClassName, iID, sKey, xSerialized)
     else
         local tValid = {}
         for pPly in pairs(tMT.__replicated_players) do
@@ -324,7 +325,7 @@ local function syncValue(tMT, tClass, oInstance, sKey, xValue)
             end
         end
         if (#tValid > 0) then
-            eventsCallRemotePlayers(ClassLib.EventMap.SetValue, tValid, Reliability.Reliable, sClassName, iID, sKey, xSerialized)
+            eventsCallRemotePlayers(ClassLib.EventMap.SetValue, tValid, _RR, sClassName, iID, sKey, xSerialized)
         end
     end
 end
@@ -345,7 +346,7 @@ local function syncValues(tMT, tClass, oInstance, tKeyValues)
     end
 
     if tMT.__replicate_to_all then
-        eventsBroadcastRemote(ClassLib.EventMap.SetValues, Reliability.Reliable, sClassName, iID, tSerialized)
+        eventsBroadcastRemote(ClassLib.EventMap.SetValues, _RR, sClassName, iID, tSerialized)
     else
         local tValid = {}
         for pPly in pairs(tMT.__replicated_players) do
@@ -354,7 +355,7 @@ local function syncValues(tMT, tClass, oInstance, tKeyValues)
             end
         end
         if (#tValid > 0) then
-            eventsCallRemotePlayers(ClassLib.EventMap.SetValues, tValid, Reliability.Reliable, sClassName, iID, tSerialized)
+            eventsCallRemotePlayers(ClassLib.EventMap.SetValues, tValid, _RR, sClassName, iID, tSerialized)
         end
     end
 end

@@ -15,6 +15,7 @@ local eventsBroadcastRemote = Events.BroadcastRemote
 local eventsSubscribeRemote = Events.SubscribeRemote
 local Server = Server
 local Client = Client
+local _RR = Reliability.Reliable
 
 -- Sync
 ----------------------------------------------------------------------
@@ -34,9 +35,9 @@ if Server then
 
         if pPly and (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
-            eventsCallRemote(ClassLib.EventMap.Constructor, pPly, Reliability.Reliable, sClass, iID, tSerVal)
+            eventsCallRemote(ClassLib.EventMap.Constructor, pPly, _RR, sClass, iID, tSerVal)
         else
-            eventsBroadcastRemote(ClassLib.EventMap.Constructor, Reliability.Reliable, sClass, iID, tSerVal)
+            eventsBroadcastRemote(ClassLib.EventMap.Constructor, _RR, sClass, iID, tSerVal)
         end
     end
 
@@ -57,9 +58,9 @@ if Server then
 
         if (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
-            eventsCallRemote(ClassLib.EventMap.Destructor, pPly, Reliability.Reliable, sClass, iID)
+            eventsCallRemote(ClassLib.EventMap.Destructor, pPly, _RR, sClass, iID)
         else
-            eventsBroadcastRemote(ClassLib.EventMap.Destructor, Reliability.Reliable, sClass, iID)
+            eventsBroadcastRemote(ClassLib.EventMap.Destructor, _RR, sClass, iID)
         end
     end
 end
