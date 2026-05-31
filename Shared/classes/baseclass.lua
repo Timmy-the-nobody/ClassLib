@@ -315,7 +315,7 @@ elseif Server then
     ---@param sEvent string @The name of the event to broadcast
     ---@param ... any @The arguments to pass to the event
     function BaseClass:BroadcastRemote(sEvent, ...)
-        ClassLib.BroadcastRemote(self, sEvent, ...)
+        ClassLib.BroadcastRemote(self, sEvent, Reliability.Reliable, ...)
     end
 end
 

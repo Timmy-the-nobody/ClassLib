@@ -315,7 +315,7 @@ local function syncValue(tMT, tClass, oInstance, sKey, xValue)
     tMT.__sync_values[sKey] = xValue
 
     if tMT.__replicate_to_all then
-        eventsBroadcastRemote(ClassLib.EventMap.SetValue, sClassName, iID, sKey, xSerialized)
+        eventsBroadcastRemote(ClassLib.EventMap.SetValue,  Reliability.Reliable, sClassName, iID, sKey, xSerialized)
     else
         local tValid = {}
         for pPly in pairs(tMT.__replicated_players) do
@@ -324,7 +324,7 @@ local function syncValue(tMT, tClass, oInstance, sKey, xValue)
             end
         end
         if (#tValid > 0) then
-            eventsCallRemotePlayers(ClassLib.EventMap.SetValue, tValid, sClassName, iID, sKey, xSerialized)
+            eventsCallRemotePlayers(ClassLib.EventMap.SetValue, tValid, Reliability.Reliable, sClassName, iID, sKey, xSerialized)
         end
     end
 end
@@ -345,7 +345,7 @@ local function syncValues(tMT, tClass, oInstance, tKeyValues)
     end
 
     if tMT.__replicate_to_all then
-        eventsBroadcastRemote(ClassLib.EventMap.SetValues, sClassName, iID, tSerialized)
+        eventsBroadcastRemote(ClassLib.EventMap.SetValues, Reliability.Reliable, sClassName, iID, tSerialized)
     else
         local tValid = {}
         for pPly in pairs(tMT.__replicated_players) do
@@ -354,7 +354,7 @@ local function syncValues(tMT, tClass, oInstance, tKeyValues)
             end
         end
         if (#tValid > 0) then
-            eventsCallRemotePlayers(ClassLib.EventMap.SetValues, tValid, sClassName, iID, tSerialized)
+            eventsCallRemotePlayers(ClassLib.EventMap.SetValues, tValid, Reliability.Reliable, sClassName, iID, tSerialized)
         end
     end
 end

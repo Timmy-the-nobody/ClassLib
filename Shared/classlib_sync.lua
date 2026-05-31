@@ -34,9 +34,9 @@ if Server then
 
         if pPly and (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
-            eventsCallRemote(ClassLib.EventMap.Constructor, pPly, sClass, iID, tSerVal)
+            eventsCallRemote(ClassLib.EventMap.Constructor, pPly, Reliability.Reliable, sClass, iID, tSerVal)
         else
-            eventsBroadcastRemote(ClassLib.EventMap.Constructor, sClass, iID, tSerVal)
+            eventsBroadcastRemote(ClassLib.EventMap.Constructor, Reliability.Reliable, sClass, iID, tSerVal)
         end
     end
 
@@ -57,9 +57,9 @@ if Server then
 
         if (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
-            eventsCallRemote(ClassLib.EventMap.Destructor, pPly, sClass, iID)
+            eventsCallRemote(ClassLib.EventMap.Destructor, pPly, Reliability.Reliable, sClass, iID)
         else
-            eventsBroadcastRemote(ClassLib.EventMap.Destructor, sClass, iID)
+            eventsBroadcastRemote(ClassLib.EventMap.Destructor, Reliability.Reliable, sClass, iID)
         end
     end
 end

@@ -93,7 +93,7 @@ if Client then
         if not sClass then return end
 
         local tArgs = ClassLib.SerializeArgs(...)
-        eventsCallRemote(ClassLib.EventMap.CLToSV, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+        eventsCallRemote(ClassLib.EventMap.CLToSV, Reliability.Reliable, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
     local tPendingRemoteWaiters = {}
@@ -175,7 +175,7 @@ elseif Server then
 
         if (getmetatable(xPlayer) == Player) then
             local tArgs = ClassLib.SerializeArgs(...)
-            eventsCallRemote(ClassLib.EventMap.SVToCL, xPlayer, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+            eventsCallRemote(ClassLib.EventMap.SVToCL, xPlayer, Reliability.Reliable, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
             return
         end
 
@@ -190,7 +190,7 @@ elseif Server then
             end
         end
         if (#tValid > 0) then
-            eventsCallRemotePlayers(ClassLib.EventMap.SVToCL, tValid, sClass, iID, sEvent, table.unpack(tArgs))
+            eventsCallRemotePlayers(ClassLib.EventMap.SVToCL, tValid, Reliability.Reliable, sClass, iID, sEvent, table.unpack(tArgs))
         end
     end
 
@@ -206,7 +206,7 @@ elseif Server then
         if not sClass then return end
 
         local tArgs = ClassLib.SerializeArgs(...)
-        eventsBroadcastRemote(ClassLib.EventMap.SVToCL, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+        eventsBroadcastRemote(ClassLib.EventMap.SVToCL, Reliability.Reliable, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
     eventsSubscribeRemote(ClassLib.EventMap.CLToSV, function(pPly, sClassName, iID, sEvent, ...)
