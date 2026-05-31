@@ -85,15 +85,16 @@ if Client then
     ---Calls a remote event from the client to the server
     ---@param oInstance table @The object to call the event from
     ---@param sEvent string @The name of the event to call
+    ---@param iRel Reliability @Reliability mode (Reliable / Unreliable)
     ---@param ... any @The arguments to pass to the event
-    function ClassLib.CallRemote_Client(oInstance, sEvent, ...)
+    function ClassLib.CallRemote_Client(oInstance, sEvent, iRel, ...)
         if (type(sEvent) ~= "string") then return end
 
         local sClass = ClassLib.GetClassName(oInstance)
         if not sClass then return end
 
         local tArgs = ClassLib.SerializeArgs(...)
-        eventsCallRemote(ClassLib.EventMap.CLToSV, Reliability.Reliable, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+        eventsCallRemote(ClassLib.EventMap.CLToSV, iRel, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
     local tPendingRemoteWaiters = {}
@@ -166,8 +167,9 @@ elseif Server then
     ---@param oInstance table @The object to call the event on
     ---@param sEvent string @The name of the event to call
     ---@param xPlayer Player|table<number, Player> @The player (or table of players) to send the event to
+    ---@param iRel Reliability @Reliability mode (Reliable / Unreliable)
     ---@param ... any @The arguments to pass to the event
-    function ClassLib.CallRemote_Server(oInstance, sEvent, xPlayer, ...)
+    function ClassLib.CallRemote_Server(oInstance, sEvent, xPlayer, iRel, ...)
         if (type(sEvent) ~= "string") then return end
 
         local sClass = ClassLib.GetClassName(oInstance)
@@ -175,7 +177,7 @@ elseif Server then
 
         if (getmetatable(xPlayer) == Player) then
             local tArgs = ClassLib.SerializeArgs(...)
-            eventsCallRemote(ClassLib.EventMap.SVToCL, xPlayer, Reliability.Reliable, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+            eventsCallRemote(ClassLib.EventMap.SVToCL, xPlayer, iRel, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
             return
         end
 
@@ -190,7 +192,7 @@ elseif Server then
             end
         end
         if (#tValid > 0) then
-            eventsCallRemotePlayers(ClassLib.EventMap.SVToCL, tValid, Reliability.Reliable, sClass, iID, sEvent, table.unpack(tArgs))
+            eventsCallRemotePlayers(ClassLib.EventMap.SVToCL, tValid, iRel, sClass, iID, sEvent, table.unpack(tArgs))
         end
     end
 
@@ -198,15 +200,16 @@ elseif Server then
     ---Broadcasts a remote event from the server to all players
     ---@param oInstance table @The object to broadcast the event on
     ---@param sEvent string @The name of the event to broadcast
+    ---@param iRel Reliability @Reliability mode (Reliable / Unreliable)
     ---@param ... any @The arguments to pass to the event
-    function ClassLib.BroadcastRemote(oInstance, sEvent, ...)
+    function ClassLib.BroadcastRemote(oInstance, sEvent, iRel, ...)
         if (type(sEvent) ~= "string") then return end
 
         local sClass = ClassLib.GetClassName(oInstance)
         if not sClass then return end
 
         local tArgs = ClassLib.SerializeArgs(...)
-        eventsBroadcastRemote(ClassLib.EventMap.SVToCL, Reliability.Reliable, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
+        eventsBroadcastRemote(ClassLib.EventMap.SVToCL, iRel, sClass, oInstance:GetID(), sEvent, table.unpack(tArgs))
     end
 
     eventsSubscribeRemote(ClassLib.EventMap.CLToSV, function(pPly, sClassName, iID, sEvent, ...)
