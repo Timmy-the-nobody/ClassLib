@@ -19,6 +19,7 @@ ClassLib.__classmap = ClassLib.__classmap or {}
 -- Event map/lightweight wire protocol
 ClassLib.EventMap = {
     ["Constructor"] = "CL:C",
+    ["ConstructorBatch"] = "CL:CB",
     ["Destructor"] = "CL:D",
     ["CLToSV"] = "CL:CTS",
     ["SVToCL"] = "CL:STC",

@@ -17,6 +17,13 @@ local Server = Server
 local Client = Client
 local _RR = Reliability.Reliable
 
+---Builds the wire payload (class name, ID, serialized sync values) for an instance construction
+---@param oInstance table @The instance to sync
+---@return string, number, table @Class name, ID, serialized sync values
+local function buildConstructPayload(oInstance)
+    return oInstance:GetClassName(), oInstance:GetID(), ClassLib.SerializeValue(getmetatable(oInstance).__sync_values)
+end
+
 -- Sync
 ----------------------------------------------------------------------
 
@@ -28,10 +35,7 @@ if Server then
     function ClassLib.SyncInstanceConstruct(oInstance, pPly)
         assert(ClassLib.IsValid(oInstance), "[ClassLib] Attempt to sync the construction of an invalid object")
 
-        local sClass = oInstance:GetClassName()
-        local iID = oInstance:GetID()
-        local tValues = getmetatable(oInstance).__sync_values
-        local tSerVal = ClassLib.SerializeValue(tValues)
+        local sClass, iID, tSerVal = buildConstructPayload(oInstance)
 
         if pPly and (getmetatable(pPly) == Player) then
             if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
@@ -66,7 +70,8 @@ if Server then
 end
 
 if Client then
-    eventsSubscribeRemote(ClassLib.EventMap.Constructor, function(sClassName, iID, tValues)
+    ---Applies a single instance construction from a wire payload, creating the instance or updating an existing one
+    local function applyConstruct(sClassName, iID, tValues)
         local tClass = ClassLib.GetClassByName(sClassName)
         if not tClass then return end
 
@@ -75,11 +80,22 @@ if Client then
 
         if not oInstance then
             ClassLib.__cl_sync_init_values = tParsedValues
-            oInstance = ClassLib.NewInstance(tClass, iID)
+            ClassLib.NewInstance(tClass, iID)
         else
             for sKey, xValue in pairs(tParsedValues) do
                 ClassLib.SetValue(oInstance, sKey, xValue, true)
             end
+        end
+    end
+
+    eventsSubscribeRemote(ClassLib.EventMap.Constructor, applyConstruct)
+
+    eventsSubscribeRemote(ClassLib.EventMap.ConstructorBatch, function(tBatch)
+        if (type(tBatch) ~= "table") then return end
+
+        for i = 1, #tBatch do
+            local tEntry = tBatch[i]
+            applyConstruct(tEntry[1], tEntry[2], tEntry[3])
         end
     end)
 
@@ -98,6 +114,10 @@ end
 ----------------------------------------------------------------------
 
 if Server then
+    -- Conservative per-batch instance count, keeps each ConstructorBatch payload well under the ~512KB packet cap.
+    -- Bump after measuring real chunk sizes if the connect burst can afford fewer, larger packets.
+    local CONSTRUCT_BATCH_SIZE = 32
+
     local tAllPlayers = {}
     Player.Subscribe("Spawn", function(pPly)
         tAllPlayers[#tAllPlayers + 1] = pPly
@@ -317,10 +337,31 @@ if Server then
         end
     end
 
+    ---Flushes a batch of construct payloads to a player as a single ConstructorBatch call.
+    ---Falls back to per-instance sends if the batch overruns the engine packet cap.
+    local function flushConstructBatch(pPly, tBatch)
+        if (#tBatch == 0) then return end
+        if not pPly:IsValid() or pPly:IsBeingDestroyed() then return end
+
+        if pcall(eventsCallRemote, ClassLib.EventMap.ConstructorBatch, pPly, _RR, tBatch) then return end
+
+        Console.Log("[ClassLib] ConstructorBatch over packet cap ("..#tBatch.." instances), falling back to per-instance sync")
+        for i = 1, #tBatch do
+            local tEntry = tBatch[i]
+            eventsCallRemote(ClassLib.EventMap.Constructor, pPly, _RR, tEntry[1], tEntry[2], tEntry[3])
+        end
+    end
+
     Player.Subscribe("Ready", function(pPly)
+        local tBatch = {}
         forAllReplicatedInstances(pPly, function(oInstance)
-            ClassLib.SyncInstanceConstruct(oInstance, pPly)
+            tBatch[#tBatch + 1] = {buildConstructPayload(oInstance)}
+            if (#tBatch >= CONSTRUCT_BATCH_SIZE) then
+                flushConstructBatch(pPly, tBatch)
+                tBatch = {}
+            end
         end)
+        flushConstructBatch(pPly, tBatch)
     end)
 
     Player.Subscribe("Destroy", function(pPly)
