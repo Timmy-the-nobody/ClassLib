@@ -249,18 +249,21 @@ end
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if a value is an object from a class, or from a class that inherits from the passed class
 ---@param xVal any @The value to check
----@param oClass table @The class to check against
----@param bRecursive boolean @Whether to check recursively
+---@param oClass any @The class to check against
+---@param bRecursive? boolean @Whether to check recursively
 ---@return boolean @Whether the value is an object from the class
 function ClassLib.IsA(xVal, oClass, bRecursive)
     if (type(xVal) ~= "table") then return false end
+    if not ClassLib.IsClassLibClass(oClass) then return false end
     if (ClassLib.GetClass(xVal) == oClass) then return true end
     if not bRecursive then return false end
 
-    for _, oSuper in ipairs(ClassLib.SuperAll(xVal)) do
-        if (oSuper == oClass) then
-            return true
-        end
+    local oSuper = ClassLib.Super(xVal)
+    while oSuper do
+        if (oSuper == oClass) then return true end
+        local oNext = ClassLib.Super(oSuper)
+        if not oNext or (oNext == oSuper) then break end
+        oSuper = oNext
     end
 
     return false

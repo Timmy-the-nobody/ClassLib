@@ -116,7 +116,7 @@ end
 if Server then
     -- Conservative per-batch instance count, keeps each ConstructorBatch payload well under the ~512KB packet cap.
     -- Bump after measuring real chunk sizes if the connect burst can afford fewer, larger packets.
-    local CONSTRUCT_BATCH_SIZE = 32
+    local CONSTRUCT_BATCH_SIZE = 64
 
     local tAllPlayers = {}
     Player.Subscribe("Spawn", function(pPly)

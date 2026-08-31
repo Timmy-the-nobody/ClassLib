@@ -91,8 +91,8 @@ end
 
 ---`🔸 Client`<br>`🔹 Server`<br>
 ---Checks if the instance is from a passed class, or from a class that inherits from the passed class
----@param oClass table @The class to check
----@param bRecursive boolean @Whether to check recursively
+---@param oClass any @The class to check
+---@param bRecursive? boolean @Whether to check recursively
 ---@return boolean @Whether the value is an object from the class
 function BaseClass:IsA(oClass, bRecursive)
     return ClassLib.IsA(self, oClass, bRecursive)
