@@ -153,6 +153,35 @@ if Server then
         return tList, false
     end
 
+    ---Moves a "*" instance to a player list. Every client already holds it, so kept players skip the
+    ---construct, and players left out get a destroy
+    ---@param oInstance table @The instance replicated to everyone
+    ---@param tMT table @Its metatable
+    ---@param tPlayers table<Player> @The players to keep
+    ---@return boolean @Always `true`, the instance leaves "*"
+    local function leaveReplicateToAll(oInstance, tMT, tPlayers)
+        tMT.__replicate_to_all = false
+        tMT.__replicated_players = {}
+
+        -- Per-player handlers never ran under "*", so kept players still get the event
+        local tClass = ClassLib.GetClass(oInstance)
+        for _, pPly in ipairs(tPlayers) do
+            if (getmetatable(pPly) == Player) and pPly:IsValid() and not pPly:IsBeingDestroyed() and not tMT.__replicated_players[pPly] then
+                tMT.__replicated_players[pPly] = true
+                ClassLib.Call(tClass, "ReplicatedPlayerChange", oInstance, pPly, true)
+                ClassLib.Call(oInstance, "ReplicatedPlayerChange", oInstance, pPly, true)
+            end
+        end
+
+        for _, pPly in ipairs(tAllPlayers) do
+            if not tMT.__replicated_players[pPly] then
+                ClassLib.SyncInstanceDestroy(oInstance, pPly)
+            end
+        end
+
+        return true
+    end
+
     ---`🔹 Server`<br>
     ---Sets the players to replicate an instance to
     ---@param oInstance table @The instance to set
@@ -170,20 +199,22 @@ if Server then
         end
 
         local tMT = getmetatable(oInstance)
-        tMT.__replicate_to_all = false
 
-        if (type(xPlayers) ~= "table") then
-            if (xPlayers == false) then
-                if tMT.__replicate_to_all then
-                    ClassLib.RemoveReplicatedPlayer(oInstance, "*")
-                else
-                    for pPly in pairs(tMT.__replicated_players) do
-                        ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
-                    end
-                end
-                return true
+        -- The "*" flag is read before anything clears it: a "*" instance keeps no player list to walk
+        if (xPlayers == false) then
+            if tMT.__replicate_to_all then
+                return ClassLib.RemoveReplicatedPlayer(oInstance, "*")
             end
-            return false
+            for pPly in pairs(tMT.__replicated_players) do
+                ClassLib.RemoveReplicatedPlayer(oInstance, pPly)
+            end
+            return true
+        end
+
+        if (type(xPlayers) ~= "table") then return false end
+
+        if tMT.__replicate_to_all then
+            return leaveReplicateToAll(oInstance, tMT, xPlayers)
         end
 
         local bHasChanges = false
